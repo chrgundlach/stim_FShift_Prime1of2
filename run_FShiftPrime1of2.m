@@ -1,15 +1,22 @@
-function [] = run_FShiftBase(sub,flag_training, flag_isolum, flag_block)
-% run_FShiftBase(sub,flag_training, flag_isolum, flag_block)
-%   runs experiment SSVEP_FShiftBase
+function [] = run_FShiftPrime1of2(sub,flag_training, flag_isolum, flag_block)
+% run_FShiftPrime1of2(sub,flag_training, flag_isolum, flag_block)
+%   runs experiment SSVEP_FShift_Prime1of2
 %       sub:            participant number
 %       flag_training:  1 = do training
 %       flag_isolum:    1 = do isoluminance adjustment
 %       flag_block:     1 = start with block 1
-%           e.g. run_FShiftBase(1,1, 0, 1)
+%           e.g. run_FShiftPrime1of2(1,1, 0, 1)
+%
+% experiment to test the pure top-down (?) vs top-down+prime FBA attentional shift
 
 
+% open questions:
+% do we need to have a discrimination task (cued RDK1 vs cued RDK2?
+% to avoid that participants focus on to be ignored color and press whenever something is happening
+% in the non-focussed to be ignored color?
 
-% Maria Dotzer, Christopher Gundlach, Leipzig, 2020
+
+% Christopher Gundlach, Leipzig, 2025
 
 if nargin < 4
     help run_FShiftBase
@@ -24,7 +31,7 @@ p.flag_block            = flag_block;           % block number to start
 p.flag_training         = flag_training;        % do training
 
 p.ITI                   = [1000 1000];          % inter trial interval in ms
-p.targ_respwin          = [200 1000];           % time window for responses in ms
+p.targ_respwin          = [200 1200];           % time window for responses in ms
 
 % screen
 p.scr_num               = 1;                    % screen number
@@ -40,26 +47,38 @@ p.isol.run              = false;                % isoluminance run?
 p.isol.override         = [];                   % manually set colors for RDK1 to RDKXs e.g. []
 % p.isol.override         = [0 0.0627450980392157 0.156862745098039 1;0 0.0823529411764706 0 1;0.0862745098039216 0.0345098039215686 0 1];
 % p.isol.override         = [0 0.332549019607843 0.831372549019608 1;0 0.439215686274510 0 1;0.454901960784314 0.181960784313726 0 1];
+p.isol.override         = [0.0980 0.0392 0 1; 0 0.0596 0.1490 1;0 0.0745 0 1]; % these are the ones used for p.isol.bckgr = p.scr_color(1:3);
+
 p.isol.bckgr            = p.scr_color(1:3)+0.2;          % isoluminant to background or different color?
 % p.isol.bckgr            = p.scr_color;          % isoluminant to background or different color?
 
+ % plot_colorwheel( [0.0980 0.0392 0; 0 0.0596 0.1490;0 0.0745 0],'ColorSpace','propixxrgb','LAB_L',50,'NumSegments',60,'AlphaColWheel',1,'LumBackground',100, 'disp_LAB_vals', 1)
+
 
 % stimplan
-p.stim.condition        = [1 2];              % conditions
-p.stim.RDK2attend       = [1 2];            % defines which RDK to attend in which condition
-p.stim.eventnum         = [0 0 1 2];        % ratio of eventnumbers
-p.stim.con_repeats_e    = 60;               % trial number/repeats for each eventnum in experiment
+p.stim.condition        = [1 2 3];          % conditions
+p.stim.RDK2attend       = [1 2; 2 3; 3 1];  % defines which RDK to attend in which condition
+p.stim.eventnum         = [0 0 0 1 2];      % ratio of eventnumbers
+p.stim.con_repeats_e    = 40;               % trial number/repeats for each eventnum in experiment % 40 or 50?
 p.stim.con_repeats_t    = 2;                % trial number/repeats for each eventnum in training
 p.stim.time_postcue     = 2;                % post.cue time in s
 p.stim.time_precue      = [1.5 2];          % precue time in s; [upper lower] for randomization
 p.stim.event.type       = 2;                % types of events (1 = targets only, 2 = targets + distrators)
+p.stim.event.ratio      = [1 1];
 p.stim.event.length     = 0.3;              % lengt of events in s
 p.stim.event.min_onset  = 0.2;              % min post-cue time before event onset in s
 p.stim.event.min_offset = 0;                % min offset from target end to end of trial in s
 p.stim.event.min_dist   = 0.8;              % min time between events in s
-p.stim.blocknum         = 8;                % number of blocks
+p.stim.blocknum         = 12;                % number of blocks
 p.stim.ITI              = [1 1];            % ITI range in seconds
 p.stim.frames_postcue   = p.stim.time_postcue*p.scr_refrate;
+
+% pre-cue events
+p.stim.precue_event.num         = [0 0 0 1]; % ratio of no precue-events (0) and precue-events(1); set 0 to turn precue-events off
+p.stim.precue_event.targets     = [1 3];      % defines which are the target events: 1 - horizontal shorter, 2 - horizontal longer, 3 - vertical shorter, 4 - vertical longer
+p.stim.precue_event.length      = 0.15;      % length of precue-event in s              
+p.stim.precue_event.min_onset   = 0.3;       % min time before precue-event onset in s
+p.stim.precue_event.min_offset  = 0.4;       % min offset from precue-event end to end of trial in s
 
 % stimuli
 RDK.RDK(1).size             = [360 360];                % width and height of RDK in pixel; only even values 
@@ -71,6 +90,7 @@ RDK.RDK(1).num              = 85;                      % number of dots
 RDK.RDK(1).mov_speed        = 1;                        % movement speed in pixel
 RDK.RDK(1).mov_dir          = [0 1; 0 -1; -1 0; 1 0];   % movement direction  [0 1; 0 -1; -1 0; 1 0] = up, down, left, right
 RDK.RDK(1).dot_size         = 12;
+RDK.RDK(1).shape            = 1;                            % 1 = square RDK; 0 = ellipse/circle RDK;
  
 RDK.RDK(2).size             = RDK.RDK(1).size;                
 RDK.RDK(2).centershift      = RDK.RDK(1).centershift;                  
@@ -81,6 +101,7 @@ RDK.RDK(2).num              = RDK.RDK(1).num;
 RDK.RDK(2).mov_speed        = RDK.RDK(1).mov_speed;
 RDK.RDK(2).mov_dir          = RDK.RDK(1).mov_dir;
 RDK.RDK(2).dot_size         = RDK.RDK(1).dot_size;
+RDK.RDK(2).shape            = 1;                            % 1 = square RDK; 0 = ellipse/circle RDK;
 
 RDK.RDK(3).size             = RDK.RDK(1).size;              
 RDK.RDK(3).centershift      = RDK.RDK(1).centershift;                   
@@ -91,6 +112,7 @@ RDK.RDK(3).num              = RDK.RDK(1).num;
 RDK.RDK(3).mov_speed        = RDK.RDK(1).mov_speed;
 RDK.RDK(3).mov_dir          = RDK.RDK(1).mov_dir;
 RDK.RDK(3).dot_size         = RDK.RDK(1).dot_size;
+RDK.RDK(3).shape            = 1;                            % 1 = square RDK; 0 = ellipse/circle RDK;
 
 RDK.event.type              = 'globalmotion';               % event type global motion
 RDK.event.duration          = p.stim.event.length;          % time of coherent motion
@@ -98,8 +120,8 @@ RDK.event.coherence         = .4;                            % percentage of coh
 RDK.event.direction         = RDK.RDK(1).mov_dir;           % movement directions for events
 
 % fixation cross
-p.crs.color                 = [0.8 0.8 0.8 1];    % color of fixation cross
-p.crs.dims                  = [16];             % dimension of fixation cross
+p.crs.color                 = [0.5 0.5 0.5 1];    % color of fixation cross
+p.crs.dims                  = [12];             % dimension of fixation cross
 p.crs.width                 = 2;                % width of fixation cross
 p.crs.cutout                = 0;                % 1 = no dots close to fixation cross
 
@@ -167,7 +189,7 @@ end
 
 %% keyboard and ports setup ???
 KbName('UnifyKeyNames')
-Buttons = [KbName('ESCAPE') KbName('Q') KbName('SPACE') KbName('j') KbName('n') KbName('1!') KbName('2@') KbName('3#')];
+Buttons = [KbName('ESCAPE') KbName('Q') KbName('SPACE') KbName('j') KbName('n')];
 RestrictKeysForKbCheck(Buttons);
 key.keymap=false(1,256);
 key.keymap(Buttons) = true;
@@ -177,7 +199,7 @@ key.keymap_ind = find(key.keymap);
 
 %% start experiment
 % initialize randomization of stimulation frequencies and RDK colors [RDK1 and RDK2 task relevant RDK3 not]
-rand('state',p.sub)
+rng(p.sub,'v4')
 [RDK.RDK(:).col_init] = deal(RDK.RDK(:).col);
 [RDK.RDK(:).freq_init] = deal(RDK.RDK(:).freq);
 [RDK.RDK(:).col] = deal(RDK.RDK(randperm(3)).col);
@@ -202,8 +224,8 @@ if p.flag_training
     i_bl = 1;
     flag_trainend = 0;
     while flag_trainend == 0 % do training until ended
-        rand('state',p.sub*i_bl) % determine randstate
-        randmat.training{i_bl} = rand_FShiftBase(p, RDK,  1);
+        rng(p.sub*100+i_bl,'v4')
+        randmat.training{i_bl} = rand_FShiftPrime1of2(p, RDK,  1);
         [timing.training{i_bl},button_presses.training{i_bl},resp.training{i_bl}] = ...
             pres_FShiftBase(p, ps, key, RDK, randmat.training{i_bl}, i_bl,1);
         save(sprintf('%s%s',p.log.path,p.filename),'timing','button_presses','resp','randmat','p', 'RDK')
@@ -400,8 +422,8 @@ end
 
 %% present each block
 % randomization
-rand('state',p.sub);                         % determine randstate
-randmat.experiment = rand_FShiftBase(p, RDK,  0);    % randomization
+rng(p.sub,'v4')                                 % allow for same randomization of randmat
+randmat.experiment = rand_FShiftPrime1of2(p, RDK,  0);    % randomization
 for i_bl = p.flag_block:p.stim.blocknum
     % start experiment
     [timing.experiment{i_bl},button_presses.experiment{i_bl},resp.experiment{i_bl}] = ...
