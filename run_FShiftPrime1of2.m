@@ -79,11 +79,13 @@ p.stim.precue_event.targets     = [1 3];      % defines which are the target eve
 p.stim.precue_event.length      = 0.15;      % length of precue-event in s              
 p.stim.precue_event.min_onset   = 0.3;       % min time before precue-event onset in s
 p.stim.precue_event.min_offset  = 0.4;       % min offset from precue-event end to end of trial in s
+p.stim.precue_event.crossdiff   = 1;
 
 % stimuli
 RDK.RDK(1).size             = [360 360];                % width and height of RDK in pixel; only even values 
 RDK.RDK(1).centershift      = [0 0];                    % position of RDK center; x and y deviation from center in pixel
 RDK.RDK(1).col              = [0 1 0 1; p.scr_color(1:3) 0];% "on" and "off" color
+RDK.RDK(1).col_label        = 'grün';                   % label of RDK color
 RDK.RDK(1).freq             = 30;                       % flicker frequency, frequency of a full "on"-"off"-cycle
 RDK.RDK(1).mov_freq         = 120;                      % Defines how frequently the dot position is updated; 0 will adjust the update-frequency to your flicker frequency (i.e. dot position will be updated with every "on"-and every "off"-frame); 120 will update the position for every frame for 120Hz or for every 1. quadrant for 480Hz 
 RDK.RDK(1).num              = 85;                      % number of dots
@@ -95,6 +97,7 @@ RDK.RDK(1).shape            = 1;                            % 1 = square RDK; 0 
 RDK.RDK(2).size             = RDK.RDK(1).size;                
 RDK.RDK(2).centershift      = RDK.RDK(1).centershift;                  
 RDK.RDK(2).col              = [0 0.4 1 1; p.scr_color(1:3) 0];
+RDK.RDK(2).col_label        = 'blau';                    % label of RDK color
 RDK.RDK(2).freq             = 24;
 RDK.RDK(2).mov_freq         = RDK.RDK(1).mov_freq;
 RDK.RDK(2).num              = RDK.RDK(1).num;
@@ -106,6 +109,7 @@ RDK.RDK(2).shape            = 1;                            % 1 = square RDK; 0 
 RDK.RDK(3).size             = RDK.RDK(1).size;              
 RDK.RDK(3).centershift      = RDK.RDK(1).centershift;                   
 RDK.RDK(3).col              = [1 0.4 0 1; p.scr_color(1:3) 0];
+RDK.RDK(3).col_label        = 'rot';                    % label of RDK color
 RDK.RDK(3).freq             = 20;
 RDK.RDK(3).mov_freq         = RDK.RDK(1).mov_freq;
 RDK.RDK(3).num              = RDK.RDK(1).num;
@@ -177,14 +181,30 @@ ps.input = struct('ScrNum',p.scr_num,'RefRate',p.scr_refrate,'PRPXres',p.scr_res
 ps.center = [ps.xCenter ps.yCenter];
 p.crs.half = p.crs.dims/2;
 p.crs.bars = [-p.crs.half p.crs.half 0 0; 0 0 -p.crs.half p.crs.half];
+p.crs.bars_events{1} = [-p.crs.half+p.stim.precue_event.crossdiff p.crs.half-p.stim.precue_event.crossdiff 0 0; 0 0 -p.crs.half p.crs.half];
+p.crs.bars_events{2} = [-p.crs.half-p.stim.precue_event.crossdiff p.crs.half+p.stim.precue_event.crossdiff 0 0; 0 0 -p.crs.half p.crs.half];
+p.crs.bars_events{3} = [-p.crs.half p.crs.half 0 0; 0 0 -p.crs.half+p.stim.precue_event.crossdiff p.crs.half-p.stim.precue_event.crossdiff];
+p.crs.bars_events{4} = [-p.crs.half p.crs.half 0 0; 0 0 -p.crs.half-p.stim.precue_event.crossdiff p.crs.half+p.stim.precue_event.crossdiff];
+
 
 % shift into 4 quadrants (running with 480 Hz)
 ps.shift = [-ps.xCenter/2, -ps.yCenter/2; ps.xCenter/2, -ps.yCenter/2;... % shifts to four quadrants: upper left, upper right, lower left, lower right
     -ps.xCenter/2, ps.yCenter/2; ps.xCenter/2, ps.yCenter/2];
 
-p.crs.lines = [];
+p.crs.lines = {};
+t.lines = [];
 for i_quad=1:p.scr_imgmultipl
-    p.crs.lines = cat(2, p.crs.lines, [p.crs.bars(1,:)+ps.shift(i_quad,1); p.crs.bars(2,:)+ps.shift(i_quad,2)]); %array with start and end points for the fixation cross lines, for all four quadrants
+    t.lines = cat(2, t.lines, [p.crs.bars(1,:)+ps.shift(i_quad,1); p.crs.bars(2,:)+ps.shift(i_quad,2)]); %array with start and end points for the fixation cross lines, for all four quadrants
+end
+p.crs.lines{1} =t.lines;
+
+for i_ev = 1:numel(p.crs.bars_events)
+    t.lines = [];
+    for i_quad=1:p.scr_imgmultipl
+        t.lines = ...
+            cat(2, t.lines, [p.crs.bars_events{i_ev}(1,:)+ps.shift(i_quad,1); p.crs.bars_events{i_ev}(2,:)+ps.shift(i_quad,2)]); %array with start and end points for the fixation cross lines, for all four quadrants
+    end
+    p.crs.lines{i_ev+1} = t.lines;
 end
 
 %% keyboard and ports setup ???
@@ -202,7 +222,9 @@ key.keymap_ind = find(key.keymap);
 rng(p.sub,'v4')
 [RDK.RDK(:).col_init] = deal(RDK.RDK(:).col);
 [RDK.RDK(:).freq_init] = deal(RDK.RDK(:).freq);
-[RDK.RDK(:).col] = deal(RDK.RDK(randperm(3)).col);
+t.idx = randperm(3);
+[RDK.RDK(:).col] = deal(RDK.RDK(t.idx).col);
+[RDK.RDK(:).col_label] = deal(RDK.RDK(t.idx).col_label);
 [RDK.RDK(:).freq] = deal(RDK.RDK(randperm(3)).freq);
 
 % initialize blank variables
@@ -226,6 +248,7 @@ if p.flag_training
     while flag_trainend == 0 % do training until ended
         rng(p.sub*100+i_bl,'v4')
         randmat.training{i_bl} = rand_FShiftPrime1of2(p, RDK,  1);
+        pres_instruction(p,ps,1); % Instruktion fürs Training
         [timing.training{i_bl},button_presses.training{i_bl},resp.training{i_bl}] = ...
             pres_FShiftBase(p, ps, key, RDK, randmat.training{i_bl}, i_bl,1);
         save(sprintf('%s%s',p.log.path,p.filename),'timing','button_presses','resp','randmat','p', 'RDK')
@@ -397,10 +420,10 @@ end
 
 if ~exist('i_bl'); i_bl = 1; end
 while flag_trainend == 0 % do training until ended
-    rand('state',p.sub*i_bl) % determine randstate
-    randmat.training{i_bl} = rand_FShiftBase(p, RDK,  1);
+    rng(p.sub*100+i_bl,'v4')
+    randmat.training{i_bl} = rand_FShiftPrime1of2(p, RDK,  1);
     [timing.training{i_bl},button_presses.training{i_bl},resp.training{i_bl}] = ...
-        pres_FShiftBase(p, ps, key, RDK, randmat.training{i_bl}, i_bl,1);
+        pres_FShiftPrime1of2(p, ps, key, RDK, randmat.training{i_bl}, i_bl,1);
     save(sprintf('%s%s',p.log.path,p.filename),'timing','button_presses','resp','randmat','p', 'RDK')
     pres_feedback(resp.training{i_bl},p,ps, key,RDK)
     
@@ -425,9 +448,11 @@ end
 rng(p.sub,'v4')                                 % allow for same randomization of randmat
 randmat.experiment = rand_FShiftPrime1of2(p, RDK,  0);    % randomization
 for i_bl = p.flag_block:p.stim.blocknum
+    % instruction before each block
+    pres_instruction(p,ps,RDK,i_bl,randmat.experiment,1); % Instruktion fürs Training
     % start experiment
     [timing.experiment{i_bl},button_presses.experiment{i_bl},resp.experiment{i_bl}] = ...
-        pres_FShiftBase(p, ps, key, RDK, randmat.experiment, i_bl,0);
+        pres_FShiftPrime1of2(p, ps, key, RDK, randmat.experiment, i_bl,0);
     % save logfiles
     save(sprintf('%s%s',p.log.path,p.filename),'timing','button_presses','resp','randmat','p', 'RDK')
           

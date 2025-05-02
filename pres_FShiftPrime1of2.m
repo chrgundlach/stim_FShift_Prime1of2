@@ -1,5 +1,5 @@
-function [timing,key,resp] = pres_FShiftBase(p, ps, key, RDK, conmat, blocknum, flag_training)
-% presents experiment SSVEP_FShiftBase
+function [timing,key,resp] = pres_FShiftPrime1of2(p, ps, key, RDK, conmat, blocknum, flag_training)
+% presents experiment SSVEP_FShiftPrime1of2
 %   p               = parameters
 %   ps              = screen parameters
 %   RDK             = RDK parameters
@@ -24,6 +24,7 @@ RDKin.scr = ps; RDKin.scr.refrate = p.scr_refrate;
 RDKin.Propixx = p.scr_imgmultipl;
 RDKin.RDK = RDK;
 RDKin.crs = p.crs;
+RDKin.crs.size = RDKin.crs.dims;
 
 %% loop for each trial
 trialindex = find(conmat.mats.block==blocknum);
@@ -56,9 +57,17 @@ for i_tr = 1:numel(trialindex)
         'cue',conmat.trials(trialindex(i_tr)).pre_cue_frames+1);
     RDKin.trial.event = struct('onset',conmat.trials(trialindex(i_tr)).event_onset_frames,...
         'direction',conmat.trials(trialindex(i_tr)).eventdirection,'RDK',conmat.trials(trialindex(i_tr)).eventRDK);
-    [colmat,dotmat,dotsize,rdkidx,frames] = RDK_init(RDKin.scr,RDKin.Propixx,RDKin.RDK,RDKin.trial,RDKin.crs);
+    [colmat,dotmat,dotsize,rdkidx,frames] = RDK_init_FShiftPrime1of2(RDKin.scr,RDKin.Propixx,RDKin.RDK,RDKin.trial,RDKin.crs);
     
     % initialize fixation cross
+    % which cross?
+    crossmat = ones(1,size(colmat,3)); % by default show normal fixation cross
+    if conmat.trials(trialindex(i_tr)).precue_eventnum == 1
+        % depict fixation cross event for relevant flips (not frames)
+        crossmat(conmat.trials(trialindex(i_tr)).precue_event_onset_frames/2-1+(1:p.scr_refrate/p.scr_imgmultipl*p.stim.precue_event.length)) = ...
+            conmat.trials(trialindex(i_tr)).precue_eventid+1;
+    end
+    % color
     colmat_cr = repmat(p.crs.color' ,[1 1 size(colmat,3)]);
     % from cue onwards: color of to be attended RDK
     colmat_cr(:,:,(conmat.trials(trialindex(i_tr)).pre_cue_frames/p.scr_imgmultipl)+1:end)=...

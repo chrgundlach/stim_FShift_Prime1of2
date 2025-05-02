@@ -72,10 +72,10 @@ for i_cue = 1:numel(p.stim.condition)
         t.evtype_comb = cell2mat( cellfun(@(x) x(:), t.grids, 'UniformOutput', false) );
         t.evtype_comb = t.evtype_comb.'; % optional transpose to match combvec output
 
-        % no write into conmat.mats.eventtype
+        % now write into conmat.mats.eventtype
         conmat.mats.eventtype(1:(t.evnum(i_evnum)),t.idx1&t.idx2) = [ ...
             repmat(t.evtype_comb,1,floor(sum(t.idx1&t.idx2)/size(t.evtype_comb,2))), ...
-            t.evtype_comb(randsample(size(t.evtype_comb,2), mod(sum(t.idx1&t.idx2),size(t.evtype_comb,2))),:)];
+            t.evtype_comb(:,randsample(size(t.evtype_comb,2), mod(sum(t.idx1&t.idx2),size(t.evtype_comb,2))))];
     end
 end
 % some checking
@@ -269,72 +269,35 @@ t.tidx = randperm(conmat.totaltrials);
 
 t.fields = fieldnames(conmat.mats);
 for i_fields = 1:numel(t.fields)
+    conmat.mats.(t.fields{i_fields}) = conmat.mats.(t.fields{i_fields})(:,t.tidx);
 end
 
-
-conmat.mats.cue = conmat.mats.cue(:,t.tidx);
-conmat.mats.RDK2attend = conmat.mats.RDK2attend(:,t.tidx);
-conmat.mats.eventnum = conmat.mats.eventnum(:,t.tidx);
-conmat.mats.eventtype = conmat.mats.eventtype(:,t.tidx);
-conmat.mats.eventRDK = conmat.mats.eventRDK(:,t.tidx);
-conmat.mats.eventdirection = conmat.mats.eventdirection(:,t.tidx);
-conmat.mats.event_onset_frames = conmat.mats.event_onset_frames(:,t.tidx);
-conmat.mats.event_onset_times = conmat.mats.event_onset_times(:,t.tidx);
-conmat.mats.pre_cue_frames = conmat.mats.pre_cue_frames(:,t.tidx);
-conmat.mats.pre_cue_times = conmat.mats.pre_cue_times(:,t.tidx);
-conmat.mats.precue_eventnum = 
-
 conmat.mats.block = repmat(1:conmat.totalblocks,conmat.trialsperblock,1);
-conmat.mats.block = conmat.mats.block(:);
+conmat.mats.block = conmat.mats.block(:)';
+
+t.resp_hand =  {'linke','rechte'};
+t.idx = repmat([1 2],1,conmat.totalblocks/2);
+conmat.mats.responsehand = repmat(t.resp_hand(t.idx(randperm(numel(t.idx)))),conmat.trialsperblock,1);
+conmat.mats.responsehand = conmat.mats.responsehand(:)';
 
 %% write all information into trial structure
 % create frame mat, onset time for events
+t.fields = fieldnames(conmat.mats);
+conmat.trials = struct();
 
-for i_tr = 1:conmat.totaltrials
-    % trialnumber
-    conmat.trials(i_tr).trialnum = i_tr;
-    
-    % block number
-    conmat.trials(i_tr).blocknum = conmat.mats.block(i_tr);
-    
-    % cue ((RDK1, RDK2) [1,2])
-    conmat.trials(i_tr).cue = conmat.mats.cue(i_tr);
-
-    % RDK 2 attent
-    conmat.trials(i_tr).RDK2attend = conmat.mats.RDK2attend(:,i_tr);
-    
-    % number of events
-    conmat.trials(i_tr).eventnum = conmat.mats.eventnum(i_tr);
-    
-    % type of events ((target, distractor) [1, 2])
-    conmat.trials(i_tr).eventtype = conmat.mats.eventtype(:,i_tr);
-    
-    % which RDK shows event?
-    conmat.trials(i_tr).eventRDK = conmat.mats.eventRDK(:,i_tr);
-    
-    % eventdirection ((according to RDK.event.direction) [1 2 3 4])
-    conmat.trials(i_tr).eventdirection = conmat.mats.eventdirection(:,i_tr);
-    
-    % event onset frames
-    conmat.trials(i_tr).event_onset_frames = conmat.mats.event_onset_frames(:,i_tr);
-    
-    % event onset times
-    conmat.trials(i_tr).event_onset_times = conmat.mats.event_onset_times(:,i_tr);
-    
-    % pre-cue frames
-    conmat.trials(i_tr).pre_cue_frames = conmat.mats.pre_cue_frames(:,i_tr);
-    
-    % pre-cue times
-    conmat.trials(i_tr).pre_cue_times = conmat.mats.pre_cue_times(:,i_tr);
-    
-    % post-cue times
-    conmat.trials(i_tr).post_cue_times = p.stim.time_postcue;
-    
-    % post-cue frames
-    conmat.trials(i_tr).post_cue_frames = p.stim.time_postcue*p.scr_refrate;
+for i_field = 1:numel(t.fields)
+    values = num2cell(conmat.mats.(t.fields{i_field}),[1]);
+    [conmat.trials(1:conmat.totaltrials).(t.fields{i_field})] = values{:};              % Assign field dynamically
 end
+% add trial num
+t.trials = num2cell(1:conmat.totaltrials);
+[conmat.trials(1:conmat.totaltrials).trialnum] = t.trials{:};
 
+% post-cue times
+[conmat.trials(1:conmat.totaltrials).post_cue_times] = deal(p.stim.time_postcue);
 
+% post-cue frames
+[conmat.trials(1:conmat.totaltrials).post_cue_frames] = deal(p.stim.time_postcue*p.scr_refrate);
 
     
 
