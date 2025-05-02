@@ -83,10 +83,12 @@ for i_tr = 1:numel(trialindex)
     key.presses_t{i_tr}=nan(size(colmat,3),sum(key.keymap));
     
     resp(i_tr).trialnumber              = trialindex(i_tr);
-    resp(i_tr).blocknumber              = conmat.trials(trialindex(i_tr)).blocknum;
+    resp(i_tr).blocknumber              = conmat.trials(trialindex(i_tr)).block;
     resp(i_tr).cue                      = conmat.trials(trialindex(i_tr)).cue; % attended RDK
-    resp(i_tr).color_attended           = RDK.RDK(resp(i_tr).cue).col(1,:);
-    resp(i_tr).freq_attended            = RDK.RDK(resp(i_tr).cue).freq;
+    resp(i_tr).RDK_attended             = conmat.trials(trialindex(i_tr)).RDK2attend;
+    resp(i_tr).RDK_unattended           = setdiff(1:numel(RDK.RDK),resp(i_tr).RDK_attended);
+    resp(i_tr).col_attended             = {RDK.RDK(conmat.trials(trialindex(i_tr)).RDK2attend).col_label};
+    resp(i_tr).freq_attended            = [RDK.RDK(conmat.trials(trialindex(i_tr)).RDK2attend).freq];
     resp(i_tr).cue_onset_fr             = conmat.trials(trialindex(i_tr)).pre_cue_frames + 1;
     resp(i_tr).cue_onset_t_est          = (conmat.trials(trialindex(i_tr)).pre_cue_frames + 1)/p.scr_refrate*1000;
     resp(i_tr).cue_onset_t_meas         = nan; % measured onset time for cue
@@ -97,12 +99,14 @@ for i_tr = 1:numel(trialindex)
     resp(i_tr).eventnum                 = conmat.trials(trialindex(i_tr)).eventnum;
     resp(i_tr).eventtype                = conmat.trials(trialindex(i_tr)).eventtype; % 1 = target; 2 = distractor
     resp(i_tr).eventRDK                 = conmat.trials(trialindex(i_tr)).eventRDK;
-    resp(i_tr).eventcolor               = cell2mat(cellfun(@(x) x(1,:),{RDK.RDK(resp(i_tr).eventRDK(resp(i_tr).eventRDK>0)).col},...
-        'UniformOutput',false)');
-    resp(i_tr).eventfreq                = [RDK.RDK(resp(i_tr).eventRDK(resp(i_tr).eventRDK>0)).freq]';
     resp(i_tr).eventdirection           = conmat.trials(trialindex(i_tr)).eventdirection;
     resp(i_tr).event_onset_frames       = conmat.trials(trialindex(i_tr)).event_onset_frames;
     resp(i_tr).event_onset_times        = conmat.trials(trialindex(i_tr)).event_onset_times;
+    resp(i_tr).precue_eventnum          = conmat.trials(trialindex(i_tr)).precue_eventnum;
+    resp(i_tr).precue_eventid           = conmat.trials(trialindex(i_tr)).precue_eventid;
+    resp(i_tr).precue_eventtype         = conmat.trials(trialindex(i_tr)).precue_eventtype;
+    resp(i_tr).precue_event_onset_fr    = conmat.trials(trialindex(i_tr)).precue_event_onset_frames;
+    resp(i_tr).precue_event_onset_t_est = conmat.trials(trialindex(i_tr)).precue_event_onset_times;
     
     %% set up datapixx trigger vector
     % prepare datapixx scheduler
@@ -123,24 +127,22 @@ for i_tr = 1:numel(trialindex)
     resp(i_tr).triggernum = ...
         p.trig.tr_cue_type(resp(i_tr).cue); % cue to RDK1 or RDK2?
     try resp(i_tr).triggernum = resp(i_tr).triggernum + ...
-            p.trig.type(1,resp(i_tr).eventtype(1)); % first event? [target or distractor]
-    end
-    try resp(i_tr).triggernum = resp(i_tr).triggernum + ...
-            p.trig.type(2,resp(i_tr).eventtype(2)); % second event [target or distractor]
+            p.trig.type(1,resp(i_tr).eventnum); % number of events?
     end
     doutWave(resp(i_tr).cue_onset_fr) = resp(i_tr).triggernum;
+    
     % event trigger
     for i_ev = 1:resp(i_tr).eventnum
-        t.trigger = p.trig.event_type(resp(i_tr).eventtype(i_ev))+ ...
-             p.trig.event_dir(resp(i_tr).eventdirection(i_ev));
-         doutWave(resp(i_tr).event_onset_frames(i_ev)) = t.trigger;
+        t.trigger = p.trig.event_type([resp(i_tr).RDK_attended' resp(i_tr).RDK_unattended] ...
+            == resp(i_tr).eventRDK(i_ev));
+        doutWave(resp(i_tr).event_onset_frames(i_ev)) = t.trigger;
     end
     doutWave = [doutWave;zeros(triggersPerRefresh-1,numel(doutWave))]; doutWave=doutWave(:);
     samplesPerFlip = triggersPerRefresh * p.scr_imgmultipl;
     % figure; plot(doutWave)        
     
     % draw fixation cross
-    Screen('DrawLines', ps.window, p.crs.lines, p.crs.width, p.crs.color, ps.center, 0);
+    Screen('DrawLines', ps.window, p.crs.lines{1}, p.crs.width, p.crs.color, ps.center, 0);
     
     % send 0 before again to reset everything
     Datapixx('SetDoutValues', 0);
@@ -166,7 +168,7 @@ for i_tr = 1:numel(trialindex)
         % RDK
         Screen('DrawDots', ps.window, dotmat(:,:,i_fl), dotsize(:,i_fl), colmat(:,:,i_fl), ps.center, 0, 0);
         % fixation cross
-        Screen('DrawLines', ps.window, p.crs.lines, p.crs.width, colmat_cr(:,1,i_fl)', ps.center, 0);
+        Screen('DrawLines', ps.window, p.crs.lines{crossmat(i_fl)}, p.crs.width, colmat_cr(:,1,i_fl)', ps.center, 0);
         
         %% start trigger schedule and start listening to response device
         if i_fl == 1 % send the trigger with the start of the 1st flip

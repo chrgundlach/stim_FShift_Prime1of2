@@ -5,7 +5,7 @@ function [] = run_FShiftPrime1of2(sub,flag_training, flag_isolum, flag_block)
 %       flag_training:  1 = do training
 %       flag_isolum:    1 = do isoluminance adjustment
 %       flag_block:     1 = start with block 1
-%           e.g. run_FShiftPrime1of2(1,1, 0, 1)
+%           e.g. run_FShiftPrime1of2(99,1,1,1)
 %
 % experiment to test the pure top-down (?) vs top-down+prime FBA attentional shift
 
@@ -19,7 +19,7 @@ function [] = run_FShiftPrime1of2(sub,flag_training, flag_isolum, flag_block)
 % Christopher Gundlach, Leipzig, 2025
 
 if nargin < 4
-    help run_FShiftBase
+    help run_FShiftPrime1of2
     return
 end
 
@@ -86,37 +86,37 @@ RDK.RDK(1).size             = [360 360];                % width and height of RD
 RDK.RDK(1).centershift      = [0 0];                    % position of RDK center; x and y deviation from center in pixel
 RDK.RDK(1).col              = [0 1 0 1; p.scr_color(1:3) 0];% "on" and "off" color
 RDK.RDK(1).col_label        = 'grün';                   % label of RDK color
-RDK.RDK(1).freq             = 30;                       % flicker frequency, frequency of a full "on"-"off"-cycle
+RDK.RDK(1).freq             = 17;                       % flicker frequency, frequency of a full "on"-"off"-cycle
 RDK.RDK(1).mov_freq         = 120;                      % Defines how frequently the dot position is updated; 0 will adjust the update-frequency to your flicker frequency (i.e. dot position will be updated with every "on"-and every "off"-frame); 120 will update the position for every frame for 120Hz or for every 1. quadrant for 480Hz 
 RDK.RDK(1).num              = 85;                      % number of dots
 RDK.RDK(1).mov_speed        = 1;                        % movement speed in pixel
 RDK.RDK(1).mov_dir          = [0 1; 0 -1; -1 0; 1 0];   % movement direction  [0 1; 0 -1; -1 0; 1 0] = up, down, left, right
 RDK.RDK(1).dot_size         = 12;
-RDK.RDK(1).shape            = 1;                            % 1 = square RDK; 0 = ellipse/circle RDK;
+RDK.RDK(1).shape            = 0;                            % 1 = square RDK; 0 = ellipse/circle RDK;
  
 RDK.RDK(2).size             = RDK.RDK(1).size;                
 RDK.RDK(2).centershift      = RDK.RDK(1).centershift;                  
 RDK.RDK(2).col              = [0 0.4 1 1; p.scr_color(1:3) 0];
 RDK.RDK(2).col_label        = 'blau';                    % label of RDK color
-RDK.RDK(2).freq             = 24;
+RDK.RDK(2).freq             = 20;
 RDK.RDK(2).mov_freq         = RDK.RDK(1).mov_freq;
 RDK.RDK(2).num              = RDK.RDK(1).num;
 RDK.RDK(2).mov_speed        = RDK.RDK(1).mov_speed;
 RDK.RDK(2).mov_dir          = RDK.RDK(1).mov_dir;
 RDK.RDK(2).dot_size         = RDK.RDK(1).dot_size;
-RDK.RDK(2).shape            = 1;                            % 1 = square RDK; 0 = ellipse/circle RDK;
+RDK.RDK(2).shape            = 0;                            % 1 = square RDK; 0 = ellipse/circle RDK;
 
 RDK.RDK(3).size             = RDK.RDK(1).size;              
 RDK.RDK(3).centershift      = RDK.RDK(1).centershift;                   
 RDK.RDK(3).col              = [1 0.4 0 1; p.scr_color(1:3) 0];
 RDK.RDK(3).col_label        = 'rot';                    % label of RDK color
-RDK.RDK(3).freq             = 20;
+RDK.RDK(3).freq             = 23;
 RDK.RDK(3).mov_freq         = RDK.RDK(1).mov_freq;
 RDK.RDK(3).num              = RDK.RDK(1).num;
 RDK.RDK(3).mov_speed        = RDK.RDK(1).mov_speed;
 RDK.RDK(3).mov_dir          = RDK.RDK(1).mov_dir;
 RDK.RDK(3).dot_size         = RDK.RDK(1).dot_size;
-RDK.RDK(3).shape            = 1;                            % 1 = square RDK; 0 = ellipse/circle RDK;
+RDK.RDK(3).shape            = 0;                            % 1 = square RDK; 0 = ellipse/circle RDK;
 
 RDK.event.type              = 'globalmotion';               % event type global motion
 RDK.event.duration          = p.stim.event.length;          % time of coherent motion
@@ -134,11 +134,10 @@ p.trig.rec_start        = 253;                  % trigger to start recording
 p.trig.rec_stop         = 254;                  % trigger to stop recording
 p.trig.tr_start         = 11;                   % trial start; main experiment
 p.trig.tr_stop          = 13;                   % trial end; main experiment
-p.trig.tr_cue_type      = [100 200];            % cue type: [RDK1 RDK2]
-p.trig.type             = [10 20; 1 2];         % [first: target, distractor; second: target, distractor]
+p.trig.tr_cue_type      = [10 20 30];           % cue type: [RDK1 RDK2]
+p.trig.type             = [1 2];                % number of events
 p.trig.button           = 60;                   % button press
-p.trig.event_type       = [80 90];              % target, distractor
-p.trig.event_dir        = 1:size(RDK.RDK(1).mov_dir); % movement direction
+p.trig.event_type       = [110 120 130];        % target same color, target second color, distractor
 
 
 % logfiles
@@ -248,9 +247,9 @@ if p.flag_training
     while flag_trainend == 0 % do training until ended
         rng(p.sub*100+i_bl,'v4')
         randmat.training{i_bl} = rand_FShiftPrime1of2(p, RDK,  1);
-        pres_instruction(p,ps,1); % Instruktion fürs Training
+        pres_instruction(p,ps,RDK,i_bl,randmat.training{i_bl},1,key); % Instruktion fürs Training
         [timing.training{i_bl},button_presses.training{i_bl},resp.training{i_bl}] = ...
-            pres_FShiftBase(p, ps, key, RDK, randmat.training{i_bl}, i_bl,1);
+            pres_FShiftPrime1of2(p, ps, key, RDK, randmat.training{i_bl}, i_bl,1);
         save(sprintf('%s%s',p.log.path,p.filename),'timing','button_presses','resp','randmat','p', 'RDK')
         pres_feedback(resp.training{i_bl},p,ps, key,RDK)
                

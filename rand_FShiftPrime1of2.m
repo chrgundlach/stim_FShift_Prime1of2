@@ -15,6 +15,12 @@ else
 end
 conmat.trialsperblock = conmat.totaltrials/conmat.totalblocks;
 
+
+
+%% there is a bug here....onsets and movements don*t match
+
+
+
 % matrix with onset times of on framesfor RDKs
 [t.onframesonset, t.onframesonset_times]= deal(nan(numel(RDK.RDK),p.scr_refrate*max(p.stim.time_postcue)));
 for i_rdk = 1:numel(RDK.RDK)
@@ -22,6 +28,7 @@ for i_rdk = 1:numel(RDK.RDK)
     t.onframesonset(i_rdk,t.mat)=1;
     t.onframesonset_times(i_rdk,t.mat)=t.mat./p.scr_refrate;
 end
+% figure; plot(~isnan(t.onframesonset_times)')
 
 % move
 [t.movonset_frames, t.movonset_times]=deal(nan(1,p.scr_refrate*max(p.stim.time_postcue)));
@@ -29,7 +36,12 @@ t.mat = 1:p.scr_refrate/RDK.RDK(1).mov_freq:size(t.movonset_frames,2);
 t.movonset_frames(t.mat)=1;
 t.movonset_times(t.mat)=t.mat./p.scr_refrate;
 
-
+[t.onframesonset2, t.onframesonset_times2]= deal(nan(numel(RDK.RDK),p.scr_refrate*max(p.stim.time_postcue)));
+for i_rdk = 1:numel(RDK.RDK)
+    t.movonset_idx = find(~isnan(t.movonset_frames))';
+    t.idx = dsearchn(find(~isnan(t.movonset_frames))',find(~isnan(t.onframesonset(i_rdk,:)))');
+    t.onframesonset2(i_rdk,t.movonset_idx(t.idx))=1;
+end
 %% start randomization
 % randomize cue (1 = attend to RDK 1,2; 2 = attend to RDK 2,3; 3 = attend to RDK 3,1)
 conmat.mats.cue = reshape(repmat(p.stim.condition,conmat.totaltrials/numel(p.stim.condition),1),1,[]);
@@ -81,7 +93,7 @@ end
 % some checking
 % sum(conmat.mats.cue==1 & conmat.mats.eventtype(1,:)==1 & conmat.mats.eventtype(2,:) == 1)
 
-% determine event RDK
+% determine event RDK and distribute evenly
 conmat.mats.eventRDK = nan(max(p.stim.eventnum),conmat.totaltrials);
 t.evnum = unique(p.stim.eventnum(p.stim.eventnum>0));
 t.eventtype = conmat.mats.eventtype; t.eventtype(isnan(t.eventtype))=0;
@@ -97,29 +109,28 @@ for i_cue = 1:numel(p.stim.condition)
     t.idx1 = conmat.mats.cue==p.stim.condition(i_cue);
     % index the relevant RDKs for the specific condition
     t.evRDK = {p.stim.RDK2attend(i_cue,:),find(~ismember(1:numel(RDK.RDK),p.stim.RDK2attend(i_cue,:)))};
-    for i_evnum = 1:numel(t.evnum)
-        % index all different numbers of events
-        t.idx2 = conmat.mats.eventnum==t.evnum(i_evnum);
-        for i_evseqs = 1:size(t.uniqueseqs,2) % across all sequencess of eventtypes
-            t.idx3 = t.rowmatch'==i_evseqs;
-            % bring all together
-            t.idxall = t.idx1&t.idx2&t.idx3;
-            if any(t.idxall) % any trial
-                % which RDKs are targets and which distractors
-                t.rdkidx = t.uniqueseqs(:,i_evseqs)~=0; % find the RDKs relevant for this cue
-                t.rdkidx(~t.rdkidx)=[];
-                t.rdkcombs = CombVec(t.evRDK{1,double([t.rdkidx'])}); % find combinations of RDKs (across potentially two numbers of events)
-                if size(t.rdkcombs,1) == 1
-                    t.rdkcombs(2,:)=nan;
-                end
-                % distribute these across the conditions
-                conmat.mats.eventRDK(:,t.idxall) = [ ... repmat and resample if necessary
-                    repmat(t.rdkcombs,1,floor(sum(t.idxall)/size(t.rdkcombs,2))), ...
-                    t.rdkcombs(:,randsample(size(t.rdkcombs,2),mod(sum(t.idxall),size(t.rdkcombs,2))))];
+    for i_evseqs = 1:size(t.uniqueseqs,2) % across all sequencess of eventtypes
+        t.idx3 = t.rowmatch'==i_evseqs;
+        % bring all together
+        t.idxall = t.idx1&t.idx3;
+        if any(t.idxall&conmat.mats.eventnum~=0) % any trial
+            % which RDKs are targets and which distractors
+            t.rdkidx = t.uniqueseqs(:,i_evseqs)~=0; % find the RDKs relevant for this cue
+            t.rdkidx(~t.rdkidx)=[];
+            t.rdkcombs = CombVec(t.evRDK{1,double([t.uniqueseqs(t.rdkidx,i_evseqs)'])}); % find combinations of RDKs (across potentially two numbers of events)
+            if size(t.rdkcombs,1) == 1
+                t.rdkcombs(2,:)=nan;
             end
+            % distribute these across the conditions
+            conmat.mats.eventRDK(:,t.idxall) = [ ... repmat and resample if necessary
+                repmat(t.rdkcombs,1,floor(sum(t.idxall)/size(t.rdkcombs,2))), ...
+                t.rdkcombs(:,randsample(size(t.rdkcombs,2),mod(sum(t.idxall),size(t.rdkcombs,2))))];
         end
+
     end
 end
+
+
 
 % randomize event directions (according to RDK.event.direction)
 conmat.mats.eventdirection = nan(max(p.stim.eventnum),conmat.totaltrials);
@@ -132,17 +143,20 @@ conmat.mats.event_onset_frames = nan(max(p.stim.eventnum),conmat.totaltrials);
 t.poss_frames = repmat( ...
     p.stim.event.min_onset<t.movonset_times & ...
     t.movonset_times<(p.stim.time_postcue-p.stim.event.length-p.stim.event.min_offset), ...
-    numel(RDK.RDK),1) & ~isnan(t.onframesonset);
+    numel(RDK.RDK),1) & ~isnan(t.onframesonset2);
 t.poss_frames_1 = repmat( ...
     p.stim.event.min_onset<t.movonset_times & ...
-    t.movonset_times<(p.stim.time_postcue-p.stim.event.length-p.stim.event.min_offset-p.stim.event.min_dist-0.01), ...
-    numel(RDK.RDK),1) & ~isnan(t.onframesonset);
+    t.movonset_times<(p.stim.time_postcue-p.stim.event.length-p.stim.event.min_offset-p.stim.event.min_dist-0.1), ...
+    numel(RDK.RDK),1) & ~isnan(t.onframesonset2);
 t.poss_frames_2 = repmat( ...
     p.stim.event.min_onset+p.stim.event.min_dist<t.movonset_times & ...
     t.movonset_times<(p.stim.time_postcue-p.stim.event.length-p.stim.event.min_offset), ...
-    numel(RDK.RDK),1) & ~isnan(t.onframesonset);
+    numel(RDK.RDK),1) & ~isnan(t.onframesonset2);
 
-% now loop across conditions, event type and RDK
+% figure; plot(t.poss_frames_1')
+% figure; plot(t.onframesonset')
+
+% now loop across conditions, event type and RDK (for first position)
 for i_con = 1:numel(p.stim.condition)
     % index all trials of cue condition
     t.idx1 = conmat.mats.cue==p.stim.condition(i_con);
@@ -183,7 +197,7 @@ for i_con = 1:numel(p.stim.condition)
             t.idx4 = conmat.mats.eventnum == 2;
             t.idxall = t.idx1 & t.idx2(1,:) & t.idx3(1,:) & t.idx4;
             % possible time frames for the respective rdk
-            t.idxframes = find(t.poss_frames(t.evRDKi(i_rdk),:));
+            t.idxframes = find(t.poss_frames_1(t.evRDKi(i_rdk),:));
             % if there are more events than possible positions
             if sum(t.idxall)>numel(t.idxframes)
                 t.poss_frames_mat = [ ...
@@ -199,16 +213,25 @@ for i_con = 1:numel(p.stim.condition)
                 t.poss_frames_mat = cell2mat(arrayfun(@(x) ...
                     t.idxframes(randsample(find(t.binLabels==x),sum(t.idxall)/t.binnum)), ...
                     unique(t.binLabels), 'UniformOutput', false));
-                conmat.mats.event_onset_frames(1,t.idxall) = t.poss_frames_mat(randperm(numel(t.poss_frames_mat)));
             end
-            % now do the second event
-            t.idxall2 = t.idx1 & t.idx2(2,:) & t.idx3(2,:) & t.idx4;
-
-
+                conmat.mats.event_onset_frames(1,t.idxall) = t.poss_frames_mat(randperm(numel(t.poss_frames_mat)));
+            
         end
     end
 end
 
+% check some troubling stuff
+%max(conmat.mats.event_onset_frames(1,conmat.mats.eventnum==2))/p.scr_refrate;
+
+
+% distribute second events randomly in possible interval
+t.idx = find(~isnan(conmat.mats.eventRDK(2,:)));
+for i_ev = 1:numel(t.idx)
+    t.idxframes = find(t.poss_frames_2(conmat.mats.eventRDK(2,t.idx(i_ev)),:));
+    % what is the time point of the first event
+    t.idx2 = find(t.idxframes > conmat.mats.event_onset_frames(1,t.idx(i_ev))+p.scr_refrate*(p.stim.event.min_dist-0.01));
+    conmat.mats.event_onset_frames(2,t.idx(i_ev)) = t.idxframes(t.idx2(randsample(numel(t.idx2),1)));
+end
 
 conmat.mats.event_onset_times = conmat.mats.event_onset_frames./p.scr_refrate;
 % % graphical check
@@ -276,7 +299,11 @@ conmat.mats.block = repmat(1:conmat.totalblocks,conmat.trialsperblock,1);
 conmat.mats.block = conmat.mats.block(:)';
 
 t.resp_hand =  {'linke','rechte'};
-t.idx = repmat([1 2],1,conmat.totalblocks/2);
+if flag_training == 1
+    t.idx = randsample([1 2],1);
+else
+    t.idx = repmat([1 2],1,conmat.totalblocks/2);
+end
 conmat.mats.responsehand = repmat(t.resp_hand(t.idx(randperm(numel(t.idx)))),conmat.trialsperblock,1);
 conmat.mats.responsehand = conmat.mats.responsehand(:)';
 
