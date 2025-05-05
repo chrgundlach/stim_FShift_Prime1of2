@@ -64,7 +64,7 @@ for i_tr = 1:numel(trialindex)
     crossmat = ones(1,size(colmat,3)); % by default show normal fixation cross
     if conmat.trials(trialindex(i_tr)).precue_eventnum == 1
         % depict fixation cross event for relevant flips (not frames)
-        crossmat(conmat.trials(trialindex(i_tr)).precue_event_onset_frames/2-1+(1:p.scr_refrate/p.scr_imgmultipl*p.stim.precue_event.length)) = ...
+        crossmat(conmat.trials(trialindex(i_tr)).precue_event_onset_frames/p.scr_imgmultipl-1+(1:p.scr_refrate/p.scr_imgmultipl*p.stim.precue_event.length)) = ...
             conmat.trials(trialindex(i_tr)).precue_eventid+1;
     end
     % color
@@ -98,6 +98,7 @@ for i_tr = 1:numel(trialindex)
     resp(i_tr).post_cue_frames          = conmat.trials(trialindex(i_tr)).post_cue_times;
     resp(i_tr).eventnum                 = conmat.trials(trialindex(i_tr)).eventnum;
     resp(i_tr).eventtype                = conmat.trials(trialindex(i_tr)).eventtype; % 1 = target; 2 = distractor
+    resp(i_tr).eventtype2               = conmat.trials(trialindex(i_tr)).eventtype2; % 1 = prime target; 2= non-prime target; 3 = distractor
     resp(i_tr).eventRDK                 = conmat.trials(trialindex(i_tr)).eventRDK;
     resp(i_tr).eventdirection           = conmat.trials(trialindex(i_tr)).eventdirection;
     resp(i_tr).event_onset_frames       = conmat.trials(trialindex(i_tr)).event_onset_frames;
@@ -139,7 +140,17 @@ for i_tr = 1:numel(trialindex)
     end
     doutWave = [doutWave;zeros(triggersPerRefresh-1,numel(doutWave))]; doutWave=doutWave(:);
     samplesPerFlip = triggersPerRefresh * p.scr_imgmultipl;
-    % figure; plot(doutWave)        
+    % figure; plot(doutWave)
+    
+    %% getting wait ITI time and then start drawing routines
+    % wait
+    if i_tr > 1
+        crttime2 = GetSecs;
+        t.timetowait = (p.ITI(1)/1000)-(crttime2 - crttime);
+        ttt=WaitSecs(t.timetowait);
+        % troubleshooting
+        %fprintf('\nbefore wait = %1.3f; after wait = %1.3f\n',crttime2 - crttime, GetSecs - crttime)
+    end
     
     % draw fixation cross
     Screen('DrawLines', ps.window, p.crs.lines{1}, p.crs.width, p.crs.color, ps.center, 0);
@@ -195,7 +206,7 @@ for i_tr = 1:numel(trialindex)
     end
     %% ITI
     % draw fixation cross again
-    Screen('DrawLines', ps.window, p.crs.lines, p.crs.width, p.crs.color, ps.center, 0);
+    Screen('DrawLines', ps.window, p.crs.lines{1}, p.crs.width, p.crs.color, ps.center, 0);
     
     % flip
     Screen('Flip', ps.window, 0);
@@ -222,24 +233,77 @@ for i_tr = 1:numel(trialindex)
     % get frame and timing of button press onsets
     resp(i_tr).button_presses_fr=nan(max(sum(key.presses{i_tr})),size(key.presses{i_tr},2));
     resp(i_tr).button_presses_t=resp(i_tr).button_presses_fr;
+    resp(i_tr).button_presses_t_rel2cue=resp(i_tr).button_presses_fr;
     for i_bt = 1:size(key.presses{i_tr},2)
         try
             resp(i_tr).button_presses_fr(1:sum(key.presses{i_tr}(:,i_bt)),i_bt)=...
                 find(key.presses{i_tr}(:,i_bt));
             resp(i_tr).button_presses_t(1:sum(key.presses{i_tr}(:,i_bt)),i_bt)=...
                 key.presses_t{i_tr}(find(key.presses{i_tr}(:,i_bt)),i_bt)*1000; % in ms
+            % relative to cue
+            resp(i_tr).button_presses_t_rel2cue(1:sum(key.presses{i_tr}(:,i_bt)),i_bt)=...
+                key.presses_t{i_tr}(find(key.presses{i_tr}(:,i_bt)),i_bt)*1000 -...
+                resp(i_tr).pre_cue_times*1000; % in ms
         catch
             resp(i_tr).button_presses_fr(:,i_bt)=nan;
         end
     end
+
+    % all relevant presses 
+    t.presses = resp(i_tr).button_presses_t(:,key.keymap_ind==key.SPACE);
+
+    % check for pre-cue events
+    % check for hits {'hit','miss','error'}
+    resp(i_tr).precue_event_response_type = {}; %{'hit','miss','error'}
+    resp(i_tr).precue_event_response_RT = []; % reaction time in ms (after event or closest to other event)
+
+    % first define response windows
+    if any(~isnan(resp(i_tr).precue_eventtype))
+        t.respwin = (resp(i_tr).precue_event_onset_t_est+(p.targ_respwin/1000))*1000;
+        % check for button presses in time window
+        t.idx_pre = t.presses>=t.respwin(:,1) & t.presses<=t.respwin(:,2);
+    else
+        t.idx_pre = false(size(t.presses));
+    end
+
+       
+    % not in any response window? --> miss; no reaction time
+    % % troublshooting
+    % if resp(i_tr).precue_eventtype == 2
+    %     t.t = 1;
+    % end
+
+    if resp(i_tr).precue_eventnum < 1
+        resp(i_tr).precue_event_response_type = 'noevent';
+        % no reaction time
+        resp(i_tr).precue_event_response_RT = nan;
+    elseif ~any(t.idx_pre) & resp(i_tr).precue_eventnum == 1
+        resp(i_tr).precue_event_response_type = 'miss';
+        % no reaction time
+        resp(i_tr).precue_event_response_RT = nan;
+    else
+        % check for first respons (in case of two presses: should be rare but might happen)
+        [~, t.idx2] = min(t.presses(t.idx_pre));
+        t.idx3 = false(size(t.presses)); t.idx3(t.idx_pre(t.idx2))=true;
+
+        if find(any(t.idx3,1)) == resp(i_tr).precue_eventtype % check for button presses of same for same trials and diff for diff trials
+            resp(i_tr).precue_event_response_type = 'hit';
+        else
+            resp(i_tr).precue_event_response_type = 'error';
+        end
+
+        % reaction time?
+        resp(i_tr).precue_event_response_RT = t.presses(t.idx3)- ...
+            resp(i_tr).precue_event_onset_t_est*1000;
+    end
+
     
     % check for hits {'hit','miss','CR','FA_proper','FA'}
     resp(i_tr).button_presses_type = {}; %{'hit','miss','CR','FA_proper','FA'}
     resp(i_tr).button_presses_RT = []; % reaction time in ms (after event or closest to other event)
     resp(i_tr).event_response_type = {}; %{'hit','miss','CR','FA_proper'}
     resp(i_tr).event_response_RT = []; %reaction time or nan
-    % all relevant presses 
-    t.presses = resp(i_tr).button_presses_t(:,key.keymap_ind==key.SPACE);
+    
     % first define response windows
     if any(~isnan(resp(i_tr).eventtype))
         t.respwin = (resp(i_tr).event_onset_times(~isnan(resp(i_tr).eventtype))+(p.targ_respwin/1000))*1000;
@@ -249,7 +313,7 @@ for i_tr = 1:numel(trialindex)
         if any(~isnan(resp(i_tr).eventtype))
             t.idx = t.presses(i_press)>=t.respwin(:,1) & t.presses(i_press)<=t.respwin(:,2);
             % not in any response window? --> FA; no reaction time
-            if sum(t.idx)== 0
+            if sum(t.idx)== 0 & ~t.idx_pre(i_press)
                 resp(i_tr).button_presses_type{i_press} = 'FA';
                 % check time to next event
                 t.RT = t.presses(i_press) - (resp(i_tr).event_onset_times*1000);
@@ -259,6 +323,10 @@ for i_tr = 1:numel(trialindex)
                     resp(i_tr).button_presses_RT(i_press) = max(t.RT);
                 end
                 resp(i_tr).button_presses_RT(i_press) = resp(i_tr).button_presses_RT(i_press);
+                
+            elseif t.idx_pre(i_press)
+                % check whether button press is a pre-cue response is
+                resp(i_tr).button_presses_type{i_press} = 'pre_cue_response';
             else
                 if resp(i_tr).eventtype(t.idx)== 1
                     resp(i_tr).button_presses_type{i_press} = 'hit';
@@ -270,11 +338,15 @@ for i_tr = 1:numel(trialindex)
                 resp(i_tr).button_presses_RT(i_press) = t.presses(i_press)-(resp(i_tr).event_onset_times(t.idx)*1000);
                 resp(i_tr).event_response_RT(t.idx) = resp(i_tr).button_presses_RT(i_press) ;
             end
-            
+           
         else
-            % no events --> all presses are false alarms; no reaction time
-            resp(i_tr).button_presses_type{i_press} = 'FA';
-            resp(i_tr).button_presses_RT(i_press) = nan;
+            if t.idx_pre(i_press)
+                resp(i_tr).button_presses_type{i_press} = 'pre_cue_response';
+            else
+                % no events --> all presses are false alarms; no reaction time
+                resp(i_tr).button_presses_type{i_press} = 'FA';
+                resp(i_tr).button_presses_RT(i_press) = nan;
+            end
         end
     end
     % check for correct responses or misses
@@ -297,12 +369,14 @@ for i_tr = 1:numel(trialindex)
             end
         end
     end
-    
-    % wait
-    crttime2 = GetSecs;
-    t.timetowait = ((p.ITI(1)/1000)+RDKin.trial.duration)-(crttime2 - inittime);
-    ttt=WaitSecs(t.timetowait);
-    crttime3 = GetSecs; % for troubleshooting
+
+   
+
+    % old wait routine
+    % crttime2 = GetSecs;
+    % t.timetowait = ((p.ITI(1)/1000)+RDKin.trial.duration)-(crttime2 - inittime);
+    % ttt=WaitSecs(t.timetowait);
+    % crttime3 = GetSecs; % for troubleshooting
     
     
 end

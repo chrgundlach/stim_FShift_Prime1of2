@@ -42,6 +42,8 @@ for i_rdk = 1:numel(RDK.RDK)
     t.idx = dsearchn(find(~isnan(t.movonset_frames))',find(~isnan(t.onframesonset(i_rdk,:)))');
     t.onframesonset2(i_rdk,t.movonset_idx(t.idx))=1;
 end
+% figure; plot(~isnan(t.onframesonset2)')
+
 %% start randomization
 % randomize cue (1 = attend to RDK 1,2; 2 = attend to RDK 2,3; 3 = attend to RDK 3,1)
 conmat.mats.cue = reshape(repmat(p.stim.condition,conmat.totaltrials/numel(p.stim.condition),1),1,[]);
@@ -130,6 +132,20 @@ for i_cue = 1:numel(p.stim.condition)
     end
 end
 
+% new eventtype variable 1 = target primed RDK, 2 = target non-primed RDK, 3 = distractor
+conmat.mats.eventtype2 = nan(max(p.stim.eventnum),conmat.totaltrials);
+t.evidx = find(~isnan(conmat.mats.eventRDK));
+t.cuemat = repmat(conmat.mats.cue,size(conmat.mats.eventRDK,1),1);
+for i_event = 1:sum(~isnan(conmat.mats.eventRDK),'all')
+    if conmat.mats.eventtype(t.evidx(i_event))==1
+        % index target RDK
+         conmat.mats.eventtype2(t.evidx(i_event)) = ...
+             find(p.stim.RDK2attend(t.cuemat(t.evidx(i_event)),:) == conmat.mats.eventRDK(t.evidx(i_event)));
+    else % index distractor RDK
+        conmat.mats.eventtype2(t.evidx(i_event)) = 3;
+    end
+end
+% sum(conmat.mats.eventtype2==1,"all")
 
 
 % randomize event directions (according to RDK.event.direction)
@@ -237,6 +253,7 @@ conmat.mats.event_onset_times = conmat.mats.event_onset_frames./p.scr_refrate;
 % % graphical check
 % figure; subplot(2,1,1);histogram(conmat.mats.event_onset_frames(:),50);subplot(2,1,2);histogram(conmat.mats.event_onset_times(:),50)
 % figure; subplot(2,1,1);histogram(diff(conmat.mats.event_onset_frames),50);subplot(2,1,2);histogram(conmat.mats.event_onset_times(:),50)
+% figure; plot(sort(conmat.mats.event_onset_times(~isnan(conmat.mats.event_onset_frames))))
 % 
 % for i_tr = 1:100
 % test(i_tr,:,:) = conmat.mats.event_onset_times;

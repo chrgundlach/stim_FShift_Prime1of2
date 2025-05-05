@@ -60,7 +60,7 @@ p.stim.condition        = [1 2 3];          % conditions
 p.stim.RDK2attend       = [1 2; 2 3; 3 1];  % defines which RDK to attend in which condition
 p.stim.eventnum         = [0 0 0 1 2];      % ratio of eventnumbers
 p.stim.con_repeats_e    = 40;               % trial number/repeats for each eventnum in experiment % 40 or 50?
-p.stim.con_repeats_t    = 2;                % trial number/repeats for each eventnum in training
+p.stim.con_repeats_t    = 1;                % trial number/repeats for each eventnum in training
 p.stim.time_postcue     = 2;                % post.cue time in s
 p.stim.time_precue      = [1.5 2];          % precue time in s; [upper lower] for randomization
 p.stim.event.type       = 2;                % types of events (1 = targets only, 2 = targets + distrators)
@@ -79,7 +79,7 @@ p.stim.precue_event.targets     = [1 3];      % defines which are the target eve
 p.stim.precue_event.length      = 0.15;      % length of precue-event in s              
 p.stim.precue_event.min_onset   = 0.3;       % min time before precue-event onset in s
 p.stim.precue_event.min_offset  = 0.4;       % min offset from precue-event end to end of trial in s
-p.stim.precue_event.crossdiff   = 1;
+p.stim.precue_event.crossdiff   = 2;
 
 % stimuli
 RDK.RDK(1).size             = [360 360];                % width and height of RDK in pixel; only even values 
@@ -127,7 +127,7 @@ RDK.event.direction         = RDK.RDK(1).mov_dir;           % movement direction
 p.crs.color                 = [0.5 0.5 0.5 1];    % color of fixation cross
 p.crs.dims                  = [12];             % dimension of fixation cross
 p.crs.width                 = 2;                % width of fixation cross
-p.crs.cutout                = 0;                % 1 = no dots close to fixation cross
+p.crs.cutout                = 1;                % 1 = no dots close to fixation cross
 
 % trigger
 p.trig.rec_start        = 253;                  % trigger to start recording
@@ -141,8 +141,8 @@ p.trig.event_type       = [110 120 130];        % target same color, target seco
 
 
 % logfiles
-p.log.path              = '/home/pc/matlab/user/christopher/SSVEP_FShiftBase/logfiles/';
-p.log.exp_name          = 'SSVEP_FShiftBase';
+p.log.path              = '/home/stimulation120/matlab/user/christopher/stim_FShift_Prime1of2/logfiles/';
+p.log.exp_name          = 'SSVEP_FShiftPrime1of2';
 p.log.add               = '_a';
 
 

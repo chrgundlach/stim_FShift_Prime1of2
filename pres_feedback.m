@@ -21,10 +21,19 @@ summ.RT_mean = nanmean(cell2mat(arrayfun(@(x,y) x(y), cell2mat({responses.event_
 summ.RT_std = nanstd(cell2mat(arrayfun(@(x,y) x(y), cell2mat({responses.event_response_RT}),...
     cell2mat(cellfun(@(x) strcmpi(x,'hit'),{responses.event_response_type},'UniformOutput',false)),'UniformOutput',false)));
 
+summ.precue_eventnum = sum([responses.precue_eventnum]);
+summ.precue_hits = sum(cell2mat(cellfun(@(x) strcmpi(x,'hit'),{responses.precue_event_response_type},'UniformOutput',false)));
+summ.precue_misses = sum(cell2mat(cellfun(@(x) strcmpi(x,'miss'),{responses.precue_event_response_type},'UniformOutput',false)));
+summ.precue_error = sum(cell2mat(cellfun(@(x) strcmpi(x,'error'),{responses.precue_event_response_type},'UniformOutput',false)));
+summ.precue_RT_mean = nanmean(cell2mat(arrayfun(@(x,y) x(y), cell2mat({responses.precue_event_response_RT}),...
+    cell2mat(cellfun(@(x) strcmpi(x,'hit'),{responses.precue_event_response_type},'UniformOutput',false)),'UniformOutput',false)));
+summ.precue_RT_std = nanstd(cell2mat(arrayfun(@(x,y) x(y), cell2mat({responses.precue_event_response_RT}),...
+    cell2mat(cellfun(@(x) strcmpi(x,'hit'),{responses.precue_event_response_type},'UniformOutput',false)),'UniformOutput',false)));
 
 
+summcon = summ;
 % behavioral effects separately for experimental conditions
-for i_con = 1:2
+for i_con = 1:numel(p.stim.condition)
     summ.targnum(1+i_con) = sum(cellfun(@(x,y) sum(x==1 & repmat((y==i_con),size(x))),...
         {responses.eventtype},{responses.cue}));
     summ.distrnum(1+i_con) = sum(cellfun(@(x,y) sum(x==2 & repmat((y==i_con),size(x))),...
