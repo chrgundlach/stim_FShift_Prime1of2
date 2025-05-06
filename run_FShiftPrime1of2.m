@@ -251,7 +251,7 @@ if p.flag_training
         [timing.training{i_bl},button_presses.training{i_bl},resp.training{i_bl}] = ...
             pres_FShiftPrime1of2(p, ps, key, RDK, randmat.training{i_bl}, i_bl,1);
         save(sprintf('%s%s',p.log.path,p.filename),'timing','button_presses','resp','randmat','p', 'RDK')
-        pres_feedback(resp.training{i_bl},p,ps, key,RDK)
+        pres_feedback(resp.training,p,ps, key,RDK)
                
         % loop for training to be repeated
         fprintf(1,'\nTraing wiederholen? (j/n)')
