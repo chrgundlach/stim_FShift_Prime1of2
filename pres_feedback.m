@@ -3,7 +3,8 @@ function [] = pres_feedback(responses_in,p,ps, key,RDK)
 %   Returns Percentage hit, false alarms, and reaction time
 
 WaitSecs(0.5);
-%% calculate feedback [for the last block]
+%% calculate feedback [for the all blocks]
+
 responses = responses_in{end};
 % get number of all events
 t.num_presses=sum(cellfun(@(x) sum(sum(~isnan(x))),{responses.button_presses_t}));    % number of total button presse
@@ -16,7 +17,11 @@ summ.hits = sum(cell2mat(cellfun(@(x) strcmpi(x,'hit'),{responses.event_response
 summ.misses = sum(cell2mat(cellfun(@(x) strcmpi(x,'miss'),{responses.event_response_type},'UniformOutput',false)));
 summ.CR = sum(cell2mat(cellfun(@(x) strcmpi(x,'CR'),{responses.event_response_type},'UniformOutput',false)));
 summ.FA_proper = sum(cell2mat(cellfun(@(x) strcmpi(x,'FA_proper'),{responses.event_response_type},'UniformOutput',false)));
-summ.FA = sum(cell2mat(cellfun(@(x) strcmpi(x,'FA'),{responses.event_response_type},'UniformOutput',false)));
+t.FA = [];
+for i_tr = 1:numel(responses)
+    t.FA(i_tr) = sum(strcmp(responses(i_tr).button_presses_type,'FA'));
+end
+summ.FA = sum(t.FA);
 summ.RT_mean = nanmean(cell2mat(arrayfun(@(x,y) x(y), cell2mat({responses.event_response_RT}),...
     cell2mat(cellfun(@(x) strcmpi(x,'hit'),{responses.event_response_type},'UniformOutput',false)),'UniformOutput',false)));
 summ.RT_std = nanstd(cell2mat(arrayfun(@(x,y) x(y), cell2mat({responses.event_response_RT}),...
@@ -32,77 +37,45 @@ summ.precue_RT_std = nanstd(cell2mat(arrayfun(@(x,y) x(y), cell2mat({responses.p
     cell2mat(cellfun(@(x) strcmpi(x,'hit'),{responses.precue_event_response_type},'UniformOutput',false)),'UniformOutput',false)));
 
 
-summcon = ();
+summcon = [];
 % behavioral effects separately for experimental conditions
 for i_con = 1:numel(p.stim.condition)
-    for i_evtype = 1:2
+    % extract indices
+    t.idx_con = repmat([responses.cue]==p.stim.condition(i_con),size([responses.eventtype2],1),1);
+    % extract responses for cue
+    t.responses = cellfun(@(x) x',{responses.event_response_type},'UniformOutput',false);
+    t.responses = [t.responses{:}];
+
+    % extract response times
+    t.response_RTs = reshape([responses.event_response_RT],size(t.responses,1),[]);
+    for i_evtype = 1:2 % primed or non primed event
+        % how many (different) targets?
         summcon.targnum(i_con,i_evtype) = ...
-            sum([responses.eventtype2]==i_evtype & [responses.cue]==p.stim.condition(i_con),"all");
-        summcon.distrnum(i_con,i_evtype) = ...
-            sum([responses.eventtype2]==3 & [responses.cue]==p.stim.condition(i_con),"all");
-                
-        t.idx_con = repmat([responses.cue]==p.stim.condition(i_con),size([responses.eventtype2],1),1);
+            sum([responses.eventtype2]==i_evtype & t.idx_con,"all");
+        % index primed or non-primed event
         t.idx_evtype_t = [responses.eventtype2]==i_evtype;
-        t.idx_evtype_d = [responses.eventtype2]==i_evtype;
-        t.responses = {responses.event_response_type};
+        summcon.hits(i_con,i_evtype) = sum(strcmp(t.responses,'hit')&t.idx_con&t.idx_evtype_t,'all');
+        summcon.misses(i_con,i_evtype) = sum(strcmp(t.responses,'miss')&t.idx_con&t.idx_evtype_t,'all');
 
-        % targets
-        t.idx_t = find(any(t.idx_con&t.idx_evtype_t,1));
-        idx_targ = 1;
-        for i_targ = 1:numel(t.idx_t)
-            % index hits
-            for i_ev = 1:sum(t.idx_evtype_t(:,t.idx_t(i_targ)))
-                t.t = find(idx_targ)
-
-
-
-
-                summcon.hits{i_con,i_evtype}(idx_targ) = ...
-                    strcmp(t.responses{t.idx_t(i_targ)}(t.idx_evtype_t(:,t.idx_t)),'hit');
-                idx_targ = idx_targ +1;
-            end
-        end
-
-
-        t.idx_anyevent=any(~isnan([responses.eventtype2]),1);
-        [responses(t.idx_anyevent).cue]
-
-        {responses(t.idx_anyevent).event_response_type}
-
-
-        sum(cell2mat(cellfun(@(x,y) strcmpi(x,'miss') & repmat((y==i_con),size(x)),...
-            {responses.event_response_type},{responses.cue},'UniformOutput',false)));
-
-        cellfun(@(x,y,z) strcmpi(x,'hit')&repmat((y==i_con),size(x))&z==i_evtype, ...
-            {responses.event_response_type},{responses.cue},{responses.eventtype2})
-
-        strcmp(responses(1).event_response_type,'hit')&
-
-
-        summcon.targnum(i_con,i_evtype) = sum(cellfun(@(x,y) sum(x==i_evtype & repmat((y==i_con),size(x))),...
-            {responses.eventtype2},{responses.cue}));
-        summ.distrnum(1+i_con) = sum(cellfun(@(x,y) sum(x==2 & repmat((y==i_con),size(x))),...
-            {responses.eventtype},{responses.cue}));
-        summ.hits(1+i_con) = sum(cell2mat(cellfun(@(x,y) strcmpi(x,'hit') & repmat((y==i_con),size(x)),...
-            {responses.event_response_type},{responses.cue},'UniformOutput',false)));
-        summ.misses(1+i_con) = sum(cell2mat(cellfun(@(x,y) strcmpi(x,'miss') & repmat((y==i_con),size(x)),...
-            {responses.event_response_type},{responses.cue},'UniformOutput',false)));
-        summ.CR(1+i_con) = sum(cell2mat(cellfun(@(x,y) strcmpi(x,'CR') & repmat((y==i_con),size(x)),...
-            {responses.event_response_type},{responses.cue},'UniformOutput',false)));
-        summ.FA_proper(1+i_con) = sum(cell2mat(cellfun(@(x,y) strcmpi(x,'FA_proper') & repmat((y==i_con),size(x)),...
-            {responses.event_response_type},{responses.cue},'UniformOutput',false)));
-        summ.FA(1+i_con) = sum(cell2mat(cellfun(@(x,y) strcmpi(x,'FA') & repmat((y==i_con),size(x)),...
-            {responses.event_response_type},{responses.cue},'UniformOutput',false)));
-        summ.RT_mean(1+i_con) = nanmean(cell2mat(arrayfun(@(x,y) x(y),...
-            cell2mat({responses.event_response_RT}), ... % reaction times for
-            cell2mat(cellfun(@(x,y) strcmpi(x,'hit')& repmat((y==i_con),size(x)),...
-            {responses.event_response_type},{responses.cue},'UniformOutput',false)),'UniformOutput',false))); % hits only
-        summ.RT_std(1+i_con) = nanstd(cell2mat(arrayfun(@(x,y) x(y),...
-            cell2mat({responses.event_response_RT}), ... % reaction times for
-            cell2mat(cellfun(@(x,y) strcmpi(x,'hit')& repmat((y==i_con),size(x)),...
-            {responses.event_response_type},{responses.cue},'UniformOutput',false)),'UniformOutput',false))); % hits only
+        summcon.RT{i_con,i_evtype} = t.response_RTs(strcmp(t.responses,'hit')&t.idx_con&t.idx_evtype_t);
     end
+    % how many distractors?
+    t.idx_evtype_d = [responses.eventtype2]==3;
+    summcon.distrnum(i_con) = sum(t.idx_evtype_d & t.idx_con,"all");
+    % extract FA_proper and CR
+    summcon.CR(i_con) = sum(strcmp(t.responses(t.idx_evtype_d & t.idx_con),'CR'),"all");
+    summcon.FA_proper(i_con) = sum(strcmp(t.responses(t.idx_evtype_d & t.idx_con),'FA_proper'),"all");
+
+    % extract FAs
+    t.FA = [];
+    t.idxFA = find([responses.cue]==p.stim.condition(i_con));
+    for i_tr = 1:numel(t.idxFA)
+        t.FA(i_tr) = sum(strcmp(responses(t.idxFA(i_tr)).button_presses_type,'FA'));
+    end
+    summcon.FA(i_con) = sum(t.FA);
 end
+
+
 
 % pixels for shift into 4 quadrants
 quadshift = [p.scr_res(1)*(1/4) p.scr_res(2)*(1/4); p.scr_res(1)*(3/4) p.scr_res(2)*(1/4); ...

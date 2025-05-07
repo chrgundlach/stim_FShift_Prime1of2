@@ -46,6 +46,7 @@ else
     fprintf(1,'\ntraining block %1.0f - Praesentation - Trial:', blocknum_present)
 end
 ttt=WaitSecs(0.3);
+crttime = GetSecs;
 
 % loop across trials
 for i_tr = 1:numel(trialindex)
@@ -254,7 +255,7 @@ for i_tr = 1:numel(trialindex)
 
     % check for pre-cue events
     % check for hits {'hit','miss','error'}
-    resp(i_tr).precue_event_response_type = {}; %{'hit','miss','error'}
+    resp(i_tr).precue_event_response_type = {}; %{'hit','miss','error','CR'}
     resp(i_tr).precue_event_response_RT = []; % reaction time in ms (after event or closest to other event)
 
     % first define response windows
@@ -277,8 +278,12 @@ for i_tr = 1:numel(trialindex)
         resp(i_tr).precue_event_response_type = 'noevent';
         % no reaction time
         resp(i_tr).precue_event_response_RT = nan;
-    elseif ~any(t.idx_pre) & resp(i_tr).precue_eventnum == 1
+    elseif ~any(t.idx_pre) & resp(i_tr).precue_eventnum == 1 & resp(i_tr).precue_eventtype == 1
         resp(i_tr).precue_event_response_type = 'miss';
+        % no reaction time
+        resp(i_tr).precue_event_response_RT = nan;
+    elseif ~any(t.idx_pre) & resp(i_tr).precue_eventnum == 1 & resp(i_tr).precue_eventtype == 2
+        resp(i_tr).precue_event_response_type = 'CR';
         % no reaction time
         resp(i_tr).precue_event_response_RT = nan;
     else
@@ -297,12 +302,12 @@ for i_tr = 1:numel(trialindex)
             resp(i_tr).precue_event_onset_t_est*1000;
     end
 
-    
+    % main events
     % check for hits {'hit','miss','CR','FA_proper','FA'}
     resp(i_tr).button_presses_type = {}; %{'hit','miss','CR','FA_proper','FA'}
     resp(i_tr).button_presses_RT = []; % reaction time in ms (after event or closest to other event)
-    resp(i_tr).event_response_type = {}; %{'hit','miss','CR','FA_proper'}
-    resp(i_tr).event_response_RT = []; %reaction time or nan
+    resp(i_tr).event_response_type = repmat({'noevent'},1,max(p.stim.eventnum)); %{'hit','miss','CR','FA_proper','noevent'}
+    resp(i_tr).event_response_RT = nan(1,max(p.stim.eventnum)); %reaction time or nan
     
     % first define response windows
     if any(~isnan(resp(i_tr).eventtype))
@@ -349,28 +354,21 @@ for i_tr = 1:numel(trialindex)
             end
         end
     end
-    % check for correct responses or misses
+    % check for correct responses or misses or correct rejections
     for i_ev = 1:resp(i_tr).eventnum
-        if isempty(resp(i_tr).event_response_type)|numel(resp(i_tr).event_response_type)<i_ev
+        if strcmp(resp(i_tr).event_response_type{i_ev},'noevent')
             if resp(i_tr).eventtype(i_ev)==1
                 resp(i_tr).event_response_type{i_ev}='miss';
             else
                 resp(i_tr).event_response_type{i_ev}='CR';
             end
             resp(i_tr).event_response_RT(i_ev) = nan;
-        else
-            if isempty(resp(i_tr).event_response_type{i_ev})
-                if resp(i_tr).eventtype(i_ev)==1
-                    resp(i_tr).event_response_type{i_ev}='miss';
-                else
-                    resp(i_tr).event_response_type{i_ev}='CR';
-                end
-                resp(i_tr).event_response_RT(i_ev) = nan;
-            end
         end
     end
 
-   
+
+
+      
 
     % old wait routine
     % crttime2 = GetSecs;
