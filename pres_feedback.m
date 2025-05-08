@@ -30,6 +30,8 @@ for i_block = 1:numel(responses_in)
         cell2mat(cellfun(@(x) strcmpi(x,'hit'),{responses.event_response_type},'UniformOutput',false)),'UniformOutput',false)));
 
     summ.precue_eventnum(i_block) = sum([responses.precue_eventnum]);
+    summ.precue_targnum(i_block) = sum([responses.precue_eventtype]==1);
+    summ.precue_distrnum(i_block) = sum([responses.precue_eventtype]==2);
     summ.precue_hits(i_block) = sum(cell2mat(cellfun(@(x) strcmpi(x,'hit'),{responses.precue_event_response_type},'UniformOutput',false)));
     summ.precue_misses(i_block) = sum(cell2mat(cellfun(@(x) strcmpi(x,'miss'),{responses.precue_event_response_type},'UniformOutput',false)));
     summ.precue_error(i_block) = sum(cell2mat(cellfun(@(x) strcmpi(x,'error'),{responses.precue_event_response_type},'UniformOutput',false)));
@@ -82,29 +84,87 @@ end
 % show last block + all so far run blocks
 % show separate for the different target types (primed + non-primed) for participants
 % show separately for conditions outside as well
+dat2disp.all.Hitrate = [summ.hits(end)/summ.targnum(end) sum(summ.hits)/sum(summ.targnum)]*100; %[last block, overall]
+dat2disp.all.FArate = [summ.FA_proper(end)/summ.distrnum(end) sum(summ.FA_proper)/sum(summ.distrnum)]*100; %[last block, overall]
+dat2disp.all.targets = [summ.targnum(end) sum(summ.targnum)]; %[last block, overall]
+dat2disp.all.distractors = [summ.distrnum(end) sum(summ.distrnum)]; %[last block, overall]
+dat2disp.all.RT_mean = [mean([summcon.RT{:,:,end}]) mean([summcon.RT{:}])];
+dat2disp.all.RT_std = [std([summcon.RT{:,:,end}]) std([summcon.RT{:}])];
+
+dat2disp.precue.Hitrate = [summ.precue_hits(end)/summ.precue_targnum(end) sum(summ.precue_hits)/sum(summ.precue_targnum)]*100; %[last block, overall]
+dat2disp.precue.FArate = [summ.precue_error(end)/summ.precue_distrnum(end) sum(summ.precue_error)/sum(summ.precue_distrnum)]*100; %[last block, overall]
+dat2disp.precue.targets = [summ.precue_targnum(end) sum(summ.precue_targnum)]; %[last block, overall]
+dat2disp.precue.distractors = [summ.precue_distrnum(end) sum(summ.precue_distrnum)]; %[last block, overall]
+dat2disp.precue.RT_mean = [summ.precue_RT_mean(end) mean(summ.precue_RT_mean)];
+dat2disp.precue.RT_std = [summ.precue_RT_std(end) mean(summ.precue_RT_std)];
+
+dat2disp.byprime.Hitrate = [(sum(summcon.hits(:,:,end))./sum(summcon.targnum(:,:,end)))' ... % sum of hits for [primed non-primed] event
+    (sum(summcon.hits,[1,3])./sum(summcon.targnum,[1,3]))']*100; %[last block primed, overall primed; last block non-primed, overall non-primed]
+dat2disp.byprime.targets = [sum(summcon.targnum(:,:,end))' sum(summcon.targnum,[1,3])']; %[last block, overall]
+dat2disp.byprime.RT_mean = [mean([summcon.RT{:,1,end}]) mean([summcon.RT{:,1,:}]); mean([summcon.RT{:,2,end}]) mean([summcon.RT{:,2,:}])];
+dat2disp.byprime.RT_std = [std([summcon.RT{:,1,end}]) std([summcon.RT{:,1,:}]); std([summcon.RT{:,2,end}]) std([summcon.RT{:,2,:}])];
+
+dat2disp.bycon.last.Hitrate = (summcon.hits(:,:,end)./summcon.targnum(:,:,end))*100; % separate by prime and non-prime
+dat2disp.bycon.last.FArate = (summcon.FA_proper(:,end)./summcon.distrnum(:,end))*100;
+dat2disp.bycon.last.targets = summcon.targnum(:,:,end); % separate by prime and non-prime
+dat2disp.bycon.last.distractors = summcon.distrnum(:,end); % separate by prime and non-primed
+[dat2disp.bycon.last.RT_mean, dat2disp.bycon.last.RT_std] = deal([]);
+for i_con = 1:numel(p.stim.condition)
+    for i_prime = 1:2
+        dat2disp.bycon.last.RT_mean(i_con,i_prime) = mean([summcon.RT{i_con,i_prime,end}]);
+        dat2disp.bycon.last.RT_std(i_con,i_prime) = std([summcon.RT{i_con,i_prime,end}]);
+    end
+end
+
+dat2disp.bycon.all.Hitrate = (sum(summcon.hits,3)./sum(summcon.targnum,3))*100; % separate by prime and non-prime
+dat2disp.bycon.all.FArate = (sum(summcon.FA_proper,2)./sum(summcon.distrnum,2))*100;
+dat2disp.bycon.all.targets = sum(summcon.targnum,3); % separate by prime and non-prime
+dat2disp.bycon.all.distractors = sum(summcon.distrnum,2); % separate by prime and non-primed
+[dat2disp.bycon.all.RT_mean, dat2disp.bycon.all.RT_std] = deal([]);
+for i_con = 1:numel(p.stim.condition)
+    for i_prime = 1:2
+        dat2disp.bycon.all.RT_mean(i_con,i_prime) = mean([summcon.RT{i_con,i_prime,:}],"all");
+        dat2disp.bycon.all.RT_std(i_con,i_prime) = std([summcon.RT{i_con,i_prime,:}],0,"all");
+    end
+end
 
 
-
-% pixels for shift into 4 quadrants
-quadshift = [p.scr_res(1)*(1/4) p.scr_res(2)*(1/4); p.scr_res(1)*(3/4) p.scr_res(2)*(1/4); ...
-    p.scr_res(1)*(1/4) p.scr_res(2)*(3/4); p.scr_res(1)*(3/4) p.scr_res(2)*(3/4)];
 
 %% presentation of results
 % KbQueueCreate(ps.RespDev, keysOfInterest) %
 % KbQueueStart(ps.RespDev);
 
+% pixels for shift into 4 quadrants
+quadshift = [p.scr_res(1)*(1/4) p.scr_res(2)*(1/4); p.scr_res(1)*(3/4) p.scr_res(2)*(1/4); ...
+    p.scr_res(1)*(1/4) p.scr_res(2)*(3/4); p.scr_res(1)*(3/4) p.scr_res(2)*(3/4)];
+
 % output to screen
-t.textin = {...
-    'All:                  ';...
-    sprintf('RDK1 [%1.02f %1.02f %1.02f]:',RDK.RDK(1).col(1,1:3));
-    sprintf('RDK2 [%1.02f %1.02f %1.02f]:',RDK.RDK(2).col(1,1:3))};
-for i_con = 1:numel(summ.hits)
-    fprintf(1,...
-        ['\n%s Hitrate: %06.2f; Hits: %02.0f; Misses: %02.0f; CR: %02.0f; FA: [%02.0f %02.0f]; RT: M: %3.0f, Std: %3.0f ms'],...
-        t.textin{i_con}, summ.hits(i_con)/summ.targnum(i_con)*100, summ.hits(i_con), summ.misses(i_con), ...
-        summ.CR(i_con), summ.FA_proper(i_con),  summ.FA(i_con), summ.RT_mean(i_con), summ.RT_std(i_con))
+fprintf('###block %02d',numel(responses_in))
+fprintf(['\nPre-Cue:\n Hitrate: %06.2f(%06.2f)%%; targs: %03d(%03d); FA_proper: %06.2f(%06.2f)%%; distr: %03d(%03d); RT_M: %3.0f(%3.0f), RT_Std: %3.0f(%3.0f) ms'], ...
+    dat2disp.precue.Hitrate, dat2disp.precue.targets, dat2disp.precue.FArate, dat2disp.precue.distractors,dat2disp.precue.RT_mean, dat2disp.precue.RT_std)
+fprintf(['\nMAIN | all collapsed:\n Hitrate: %06.2f(%06.2f)%%; targs: %03d(%03d); FA_proper: %06.2f(%06.2f)%%; distr: %03d(%03d); RT_M: %3.0f(%3.0f), RT_Std: %3.0f(%3.0f) ms'], ...
+    dat2disp.all.Hitrate, dat2disp.all.targets, dat2disp.all.FArate, dat2disp.all.distractors,dat2disp.all.RT_mean, dat2disp.all.RT_std)
+fprintf('\nMAIN by prime | color collapsed:')
+fprintf(['\n primed:    Hitrate: %06.2f(%06.2f)%%; targs: %03d(%03d); RT_M: %3.0f(%3.0f), RT_Std: %3.0f(%3.0f) ms'], ...
+    dat2disp.byprime.Hitrate(1,:), dat2disp.byprime.targets(1,:), dat2disp.byprime.RT_mean(1,:), dat2disp.byprime.RT_std(1,:))
+fprintf(['\n nonprimed: Hitrate: %06.2f(%06.2f)%%; targs: %03d(%03d); RT_M: %3.0f(%3.0f), RT_Std: %3.0f(%3.0f) ms'], ...
+    dat2disp.byprime.Hitrate(2,:), dat2disp.byprime.targets(2,:), dat2disp.byprime.RT_mean(2,:), dat2disp.byprime.RT_std(2,:))
+for i_con = 1:numel(p.stim.condition)
+    fprintf('\nMAIN by prime | attend [%s %s]:', RDK.RDK(p.stim.RDK2attend(i_con,:)).col_label)
+    fprintf(['\n primed:    Hitrate: %06.2f(%06.2f)%%; targs: %03d(%03d); RT_M: %3.0f(%3.0f), RT_Std: %3.0f(%3.0f) ms'], ...
+        dat2disp.bycon.last.Hitrate(i_con,1), dat2disp.bycon.all.Hitrate(i_con,1), ...
+        dat2disp.bycon.last.targets(i_con,1), dat2disp.bycon.all.targets(i_con,1), ...
+        dat2disp.bycon.last.RT_mean(i_con,1), dat2disp.bycon.all.RT_mean(i_con,1), ...
+        dat2disp.bycon.last.RT_std(i_con,1), dat2disp.bycon.all.RT_std(i_con,1))
+    fprintf(['\n nonprimed: Hitrate: %06.2f(%06.2f)%%; targs: %03d(%03d); RT_M: %3.0f(%3.0f), RT_Std: %3.0f(%3.0f) ms'], ...
+        dat2disp.bycon.last.Hitrate(i_con,2), dat2disp.bycon.all.Hitrate(i_con,2), ...
+        dat2disp.bycon.last.targets(i_con,2), dat2disp.bycon.all.targets(i_con,2), ...
+        dat2disp.bycon.last.RT_mean(i_con,2), dat2disp.bycon.all.RT_mean(i_con,2), ...
+        dat2disp.bycon.last.RT_std(i_con,2), dat2disp.bycon.all.RT_std(i_con,2))
 end
-fprintf('\nMit "q" geht es weiter.\n')
+fprintf('\n###\n\n')
+
+
 
 
 % draw text and stimuli (before shifting to the quadrants)
@@ -115,10 +175,14 @@ fprintf('\nMit "q" geht es weiter.\n')
 
 text2present=                   [...                % text for feedback
     'P A U S E'...
-    sprintf('\n\nHits = %1.0f; Hitrate = %1.2f%%',summ.hits(1), summ.hits(1)/summ.targnum(1)*100)...
-    sprintf('\n\nReaktionszeit: M = %1.0fms, Std = %1.0fms',summ.RT_mean(1), summ.RT_std(1))...
-    sprintf('\n\n\nMisses = %1.0f; Correct Rejections = %1.0f',summ.misses(1), summ.CR(1))...
-    sprintf('\n\nFA_proper = %1.0f; FA = %1.0f',summ.FA_proper(1), summ.FA(1)	)...
+    sprintf('\n\nmain task | letzte Block (alle)')...
+    sprintf('\nHitrate = %1.2f(%1.2f)%%, Zielreize = %d(%d)',dat2disp.all.Hitrate, dat2disp.all.targets)...
+    sprintf('\nReaktionszeit: M = %1.0f(%1.0f)ms, Std = %1.0f(%1.0f)ms',dat2disp.all.RT_mean, dat2disp.all.RT_std)...
+    sprintf('\nFA_proper_rate = %1.2f(%1.2f)%%, Distraktoren = %d(%d)',dat2disp.all.FArate, dat2disp.all.distractors)...
+    sprintf('\n\npre-cue task | letzte Block (alle)')...
+    sprintf('\nHitrate = %1.2f(%1.2f)%%, Zielreize = %d(%d)',dat2disp.precue.Hitrate, dat2disp.precue.targets)...
+    sprintf('\nReaktionszeit: M = %1.0f(%1.0f)ms, Std = %1.0f(%1.0f)ms',dat2disp.precue.RT_mean, dat2disp.precue.RT_std)...
+    sprintf('\nFA_proper_rate = %1.2f(%1.2f)%%, Distraktoren = %d(%d)',dat2disp.precue.FArate, dat2disp.precue.distractors)...
     ];
 
 % draw text
