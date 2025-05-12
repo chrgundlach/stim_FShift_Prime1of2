@@ -45,12 +45,10 @@ p.isol.TrlAdj           = 5;                    % number of trials used for isol
 p.isol.MaxStd           = 10;                   % standard deviation tolerated
 p.isol.run              = false;                % isoluminance run?
 p.isol.override         = [];                   % manually set colors for RDK1 to RDKXs e.g. []
-% p.isol.override         = [0 0.0627450980392157 0.156862745098039 1;0 0.0823529411764706 0 1;0.0862745098039216 0.0345098039215686 0 1];
-% p.isol.override         = [0 0.332549019607843 0.831372549019608 1;0 0.439215686274510 0 1;0.454901960784314 0.181960784313726 0 1];
-p.isol.override         = [0.0980 0.0392 0 1; 0 0.0596 0.1490 1;0 0.0745 0 1]; % these are the ones used for p.isol.bckgr = p.scr_color(1:3);
+p.isol.override         = [0 0.0745 0 1; 0 0.0596 0.1490 1;0.0980 0.0392 0 1]; % these are the ones used for p.isol.bckgr = p.scr_color(1:3);
 
-p.isol.bckgr            = p.scr_color(1:3)+0.2;          % isoluminant to background or different color?
-% p.isol.bckgr            = p.scr_color;          % isoluminant to background or different color?
+% p.isol.bckgr            = p.scr_color(1:3)+0.2;          % isoluminant to background or different color?
+p.isol.bckgr            = p.scr_color;          % isoluminant to background or different color?
 
  % plot_colorwheel( [0.0980 0.0392 0; 0 0.0596 0.1490;0 0.0745 0],'ColorSpace','propixxrgb','LAB_L',50,'NumSegments',60,'AlphaColWheel',1,'LumBackground',100, 'disp_LAB_vals', 1)
 
@@ -120,7 +118,7 @@ RDK.RDK(3).shape            = 0;                            % 1 = square RDK; 0 
 
 RDK.event.type              = 'globalmotion';               % event type global motion
 RDK.event.duration          = p.stim.event.length;          % time of coherent motion
-RDK.event.coherence         = .4;                            % percentage of coherently moving dots 0.7
+RDK.event.coherence         = .6;                            % percentage of coherently moving dots 0.4
 RDK.event.direction         = RDK.RDK(1).mov_dir;           % movement directions for events
 
 % fixation cross
@@ -208,7 +206,7 @@ end
 
 %% keyboard and ports setup ???
 KbName('UnifyKeyNames')
-Buttons = [KbName('ESCAPE') KbName('Q') KbName('SPACE') KbName('j') KbName('n')];
+Buttons = [KbName('ESCAPE') KbName('Q') KbName('SPACE') KbName('j') KbName('n')  KbName('1!') KbName('2@') KbName('3#')];
 RestrictKeysForKbCheck(Buttons);
 key.keymap=false(1,256);
 key.keymap(Buttons) = true;
@@ -225,6 +223,7 @@ t.idx = randperm(3);
 [RDK.RDK(:).col] = deal(RDK.RDK(t.idx).col);
 [RDK.RDK(:).col_label] = deal(RDK.RDK(t.idx).col_label);
 [RDK.RDK(:).freq] = deal(RDK.RDK(randperm(3)).freq);
+p.isol.override = p.isol.override(t.idx,:);
 
 % initialize blank variables
 timing = []; button_presses = []; resp = []; randmat = [];
@@ -282,8 +281,12 @@ if flag_isolum == 1
     p.isol.init_cols = cell2mat({RDK.RDK.col}'); p.isol.init_cols = p.isol.init_cols(1:2:end,1:3);
     
     % start isoluminance script only RGB output (no alpha)
-    [Col2Use] = PRPX_IsolCol_480_adj([p.isol.bckgr(1:3); p.isol.init_cols],p.isol.TrlAdj,p.isol.MaxStd,0,RDK.RDK(1).size);
-%     [Col2Use] = PRPX_IsolCol_adj([p.isol.bckgr(1:3); p.isol.init_cols],p.isol.TrlAdj,p.isol.MaxStd,0,RDK.RDK(1).size);
+    [Col2Use] = PRPX_IsolCol_480_adj(...
+        [p.isol.bckgr(1:3); p.isol.init_cols(:,1:3)],...
+        p.isol.TrlAdj,...
+        p.isol.MaxStd,...
+        cellfun(@(x) x(1), {RDK.RDK.centershift})',...
+        RDK.RDK(1).size);
     
     for i_RDK = 1:numel(RDK.RDK)
         RDK.RDK(i_RDK).col(1,:) = [Col2Use(1+i_RDK,:) 1];
@@ -312,11 +315,17 @@ else
     isol.opt(1).colors = t.cols(1:2:end,:);
     isol.opt(1).text = sprintf('default: [%1.2f %1.2f %1.2f %1.2f] [%1.2f %1.2f %1.2f %1.2f] [%1.2f %1.2f %1.2f %1.2f]',isol.opt(1).colors');
     % option2: use isoluminance values of previously saved dataset
-    if ~isempty(t.isol) % file loaded?
+    if ~isempty(t.isol) % file loaded 
         [t.t t.idx] = max(cell2mat(t.datenum));
-        isol.opt(2).available = true;
-        isol.opt(2).colors = t.isol{t.idx}.coladj(1:end,:);
-        isol.opt(2).text = sprintf('aus gespeicherter Datei: [%1.2f %1.2f %1.2f %1.2f] [%1.2f %1.2f %1.2f %1.2f] [%1.2f %1.2f %1.2f %1.2f]',isol.opt(2).colors');
+        if any(strcmp(fieldnames(t.isol{t.idx}),'coladj')) % and adjusted colors exist?s
+            isol.opt(2).available = true;
+            isol.opt(2).colors = t.isol{t.idx}.coladj(1:end,:);
+            isol.opt(2).text = sprintf('aus gespeicherter Datei: %s',sprintf('[%1.2f %1.2f %1.2f] ',isol.opt(2).colors(:,1:3)'));
+        else
+            isol.opt(2).available = false;
+            isol.opt(2).colors = [];
+            isol.opt(2).text = [];
+        end
     else
         isol.opt(2).available = false;
         isol.opt(2).colors = [];
@@ -377,21 +386,6 @@ end
 ps.input = struct('ScrNum',p.scr_num,'RefRate',p.scr_refrate,'PRPXres',p.scr_res,'BckGrCol',p.scr_color,'PRPXmode',2);
 [~, ps.screensize, ps.xCenter, ps.yCenter, ps.window, ps.framerate, ps.RespDev, ps.keymap] = PTExpInit_GLSL(ps.input,1);
 
-% some initial calculations
-% fixation cross
-ps.center = [ps.xCenter ps.yCenter];
-p.crs.half = p.crs.dims/2;
-p.crs.bars = [-p.crs.half p.crs.half 0 0; 0 0 -p.crs.half p.crs.half];
-
-% shift into 4 quadrants (running with 480 Hz)
-ps.shift = [-ps.xCenter/2, -ps.yCenter/2; ps.xCenter/2, -ps.yCenter/2;... % shifts to four quadrants: upper left, upper right, lower left, lower right
-    -ps.xCenter/2, ps.yCenter/2; ps.xCenter/2, ps.yCenter/2];
-
-p.crs.lines = [];
-for i_quad=1:p.scr_imgmultipl
-    p.crs.lines = cat(2, p.crs.lines, [p.crs.bars(1,:)+ps.shift(i_quad,1); p.crs.bars(2,:)+ps.shift(i_quad,2)]); %array with start and end points for the fixation cross lines, for all four quadrants
-end
-
 % keyboard setup
 KbName('UnifyKeyNames')
 Buttons = [KbName('ESCAPE') KbName('Q') KbName('SPACE') KbName('j') KbName('n') KbName('1!') KbName('2@') KbName('3#')];
@@ -421,10 +415,11 @@ if ~exist('i_bl'); i_bl = 1; end
 while flag_trainend == 0 % do training until ended
     rng(p.sub*100+i_bl,'v4')
     randmat.training{i_bl} = rand_FShiftPrime1of2(p, RDK,  1);
+    pres_instruction(p,ps,RDK,i_bl,randmat.training{i_bl},1,key); % Instruktion fürs Training
     [timing.training{i_bl},button_presses.training{i_bl},resp.training{i_bl}] = ...
         pres_FShiftPrime1of2(p, ps, key, RDK, randmat.training{i_bl}, i_bl,1);
     save(sprintf('%s%s',p.log.path,p.filename),'timing','button_presses','resp','randmat','p', 'RDK')
-    pres_feedback(resp.training{i_bl},p,ps, key,RDK)
+    pres_feedback(resp.training,p,ps, key,RDK)
     
     % loop for training to be repeated
     fprintf(1,'\nTraing wiederholen? (j/n)')
@@ -448,14 +443,14 @@ rng(p.sub,'v4')                                 % allow for same randomization o
 randmat.experiment = rand_FShiftPrime1of2(p, RDK,  0);    % randomization
 for i_bl = p.flag_block:p.stim.blocknum
     % instruction before each block
-    pres_instruction(p,ps,RDK,i_bl,randmat.experiment,1); % Instruktion fürs Training
+    pres_instruction(p,ps,RDK,i_bl,randmat.experiment,2,key); % Instruktion fürs Training
     % start experiment
     [timing.experiment{i_bl},button_presses.experiment{i_bl},resp.experiment{i_bl}] = ...
         pres_FShiftPrime1of2(p, ps, key, RDK, randmat.experiment, i_bl,0);
     % save logfiles
     save(sprintf('%s%s',p.log.path,p.filename),'timing','button_presses','resp','randmat','p', 'RDK')
           
-    pres_feedback(resp.experiment{i_bl},p,ps, key, RDK)    
+    pres_feedback(resp.experiment,p,ps, key, RDK)    
 end
 
 fprintf(1,'\n\nENDE\n')
