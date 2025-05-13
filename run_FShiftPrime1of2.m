@@ -72,7 +72,8 @@ p.stim.ITI              = [1 1];            % ITI range in seconds
 p.stim.frames_postcue   = p.stim.time_postcue*p.scr_refrate;
 
 % pre-cue events
-p.stim.precue_event.num         = [0 0 0 1]; % ratio of no precue-events (0) and precue-events(1); set 0 to turn precue-events off
+% p.stim.precue_event.num         = [0 0 0 1]; % ratio of no precue-events (0) and precue-events(1); set 0 to turn precue-events off
+p.stim.precue_event.num         = [0 0 0 0]; % ratio of no precue-events (0) and precue-events(1); set 0 to turn precue-events off
 p.stim.precue_event.targets     = [1 3];      % defines which are the target events: 1 - horizontal shorter, 2 - horizontal longer, 3 - vertical shorter, 4 - vertical longer
 p.stim.precue_event.length      = 0.15;      % length of precue-event in s              
 p.stim.precue_event.min_onset   = 0.3;       % min time before precue-event onset in s
