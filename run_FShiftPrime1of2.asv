@@ -246,9 +246,7 @@ if p.flag_training
     flag_trainend = 0;
     while flag_trainend == 0 % do training until ended
         rng(p.sub*100+i_bl,'v4')
-        % brightr cross initially
-        p_tr = p; p_tr.crs.color = [0.5 0.5 0.5 1];
-        randmat.training{i_bl} = rand_FShiftPrime1of2(p_tr, RDK,  1);
+        randmat.training{i_bl} = rand_FShiftPrime1of2(p, RDK,  1);
         pres_instruction(p,ps,RDK,i_bl,randmat.training{i_bl},1,key); % Instruktion fürs Training
         [timing.training{i_bl},button_presses.training{i_bl},resp.training{i_bl}] = ...
             pres_FShiftPrime1of2(p, ps, key, RDK, randmat.training{i_bl}, i_bl,1);

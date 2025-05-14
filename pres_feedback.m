@@ -145,7 +145,7 @@ quadshift = [p.scr_res(1)*(1/4) p.scr_res(2)*(1/4); p.scr_res(1)*(3/4) p.scr_res
     p.scr_res(1)*(1/4) p.scr_res(2)*(3/4); p.scr_res(1)*(3/4) p.scr_res(2)*(3/4)];
 
 % output to screen
-fprintf('###block %02d',numel(responses_in))
+fprintf('\n###block %02d###',numel(responses_in))
 % fprintf(['\nPre-Cue:\n Hitrate: %06.2f(%06.2f)%%; targs: %03d(%03d); FA_proper: %06.2f(%06.2f)%%; distr: %03d(%03d); RT_M: %3.0f(%3.0f), RT_Std: %3.0f(%3.0f) ms'], ...
 %     dat2disp.precue.Hitrate, dat2disp.precue.targets, dat2disp.precue.FArate, dat2disp.precue.distractors,dat2disp.precue.RT_mean, dat2disp.precue.RT_std)
 fprintf(['\nMAIN | all collapsed:\n Hitrate: %06.2f(%06.2f)%%; targs: %03d(%03d); FA_proper: %06.2f(%06.2f)%%; distr: %03d(%03d); RT_M: %3.0f(%3.0f), RT_Std: %3.0f(%3.0f) ms'], ...
@@ -168,7 +168,7 @@ for i_con = 1:numel(p.stim.condition)
         dat2disp.bycon.last.RT_mean(i_con,2), dat2disp.bycon.all.RT_mean(i_con,2), ...
         dat2disp.bycon.last.RT_std(i_con,2), dat2disp.bycon.all.RT_std(i_con,2))
 end
-fprintf('\n###\n\n')
+fprintf('\n###\nWeiter mit q...\n')
 
 
 
@@ -206,7 +206,7 @@ text2present=                   [...                % text for feedback
     'P A U S E'...
     sprintf('\nReaktionszeit: M = %1.0f(%1.0f)ms, Std = %1.0f(%1.0f)ms',dat2disp.all.RT_mean, dat2disp.all.RT_std)...
     sprintf('\nauf %1.0f(%1.0f) Zielreize reagiert von %1.0f(%1.0f) möglichen', ...
-    dat2disp.last.targets, dat2disp.precue.Hitrate./100.*dat2disp.last.targets)
+    dat2disp.all.Hitrate./100.*dat2disp.all.targets, dat2disp.all.targets)
     ];
 
 
