@@ -87,7 +87,7 @@ RDK.RDK(1).col              = [0 1 0 1; p.scr_color(1:3) 0];% "on" and "off" col
 RDK.RDK(1).col_label        = 'grün';                   % label of RDK color
 RDK.RDK(1).freq             = 17;                       % flicker frequency, frequency of a full "on"-"off"-cycle
 RDK.RDK(1).mov_freq         = 120;                      % Defines how frequently the dot position is updated; 0 will adjust the update-frequency to your flicker frequency (i.e. dot position will be updated with every "on"-and every "off"-frame); 120 will update the position for every frame for 120Hz or for every 1. quadrant for 480Hz 
-RDK.RDK(1).num              = 85;                      % number of dots
+RDK.RDK(1).num              = 85;                      % number of dots % 85
 RDK.RDK(1).mov_speed        = 1;                        % movement speed in pixel
 RDK.RDK(1).mov_dir          = [0 1; 0 -1; -1 0; 1 0];   % movement direction  [0 1; 0 -1; -1 0; 1 0] = up, down, left, right
 RDK.RDK(1).dot_size         = 12;
