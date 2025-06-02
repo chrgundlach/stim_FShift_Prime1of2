@@ -107,9 +107,9 @@ DrawFormattedText(ps.offwin, RDK.RDK(1).col_label, p.scr_res(1)/2 * 0.57, p.scr_
 DrawFormattedText(ps.offwin, RDK.RDK(2).col_label, p.scr_res(1)/2 * 0.57, p.scr_res(1)/2 * 0.381, RDK.RDK(2).col(1,:));
 DrawFormattedText(ps.offwin, RDK.RDK(3).col_label, p.scr_res(1)/2 * 0.57, p.scr_res(1)/2 * 0.402, RDK.RDK(3).col(1,:));
 
-DrawFormattedText(ps.offwin, RDK.RDK(2).col_label, p.scr_res(1)/2 * 0.61, p.scr_res(1)/2 * 0.359, RDK.RDK(2).col(1,:));
-DrawFormattedText(ps.offwin, RDK.RDK(3).col_label, p.scr_res(1)/2 * 0.61, p.scr_res(1)/2 * 0.381, RDK.RDK(3).col(1,:));
-DrawFormattedText(ps.offwin, RDK.RDK(1).col_label, p.scr_res(1)/2 * 0.61, p.scr_res(1)/2 * 0.402, RDK.RDK(1).col(1,:));
+DrawFormattedText(ps.offwin, RDK.RDK(2).col_label, p.scr_res(1)/2 * 0.63, p.scr_res(1)/2 * 0.359, RDK.RDK(2).col(1,:));
+DrawFormattedText(ps.offwin, RDK.RDK(3).col_label, p.scr_res(1)/2 * 0.63, p.scr_res(1)/2 * 0.381, RDK.RDK(3).col(1,:));
+DrawFormattedText(ps.offwin, RDK.RDK(1).col_label, p.scr_res(1)/2 * 0.63, p.scr_res(1)/2 * 0.402, RDK.RDK(1).col(1,:));
 
 
 for i_quad = 1:4 % shifst to quadrants

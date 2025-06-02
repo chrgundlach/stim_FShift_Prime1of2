@@ -108,7 +108,7 @@ RDK.RDK(2).shape            = 0;                            % 1 = square RDK; 0 
 RDK.RDK(3).size             = RDK.RDK(1).size;              
 RDK.RDK(3).centershift      = RDK.RDK(1).centershift;                   
 RDK.RDK(3).col              = [1 0.4 0 1; p.scr_color(1:3) 0];
-RDK.RDK(3).col_label        = 'rot';                    % label of RDK color
+RDK.RDK(3).col_label        = 'orange';                    % label of RDK color
 RDK.RDK(3).freq             = 23;
 RDK.RDK(3).mov_freq         = RDK.RDK(1).mov_freq;
 RDK.RDK(3).num              = RDK.RDK(1).num;
