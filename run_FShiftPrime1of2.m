@@ -30,8 +30,8 @@ p.sub                   = sub;                  % subject number
 p.flag_block            = flag_block;           % block number to start
 p.flag_training         = flag_training;        % do training
 
-p.ITI                   = [1000 1000];          % inter trial interval in ms
-p.targ_respwin          = [200 1200];           % time window for responses in ms
+p.ITI                   = [1000 100 -0];          % inter trial interval in ms
+p.targ_respwin          = [201, 1000];           % time window for responses in ms [200 1200]
 
 % screen
 p.scr_num               = 1;                    % screen number
@@ -165,6 +165,9 @@ for i_file = 1:numel(filecheck)
     t.in = load(fullfile(filecheck(i_file).folder,filecheck(i_file).name));
     t.datenum{i_file} = filecheck(i_file).datenum;
     t.isol{i_file} = t.in.p.isol;
+
+    % load responses
+    resp = t.in.resp;
     
 end
 
@@ -227,7 +230,9 @@ t.idx = randperm(3);
 p.isol.override = p.isol.override(t.idx,:);
 
 % initialize blank variables
-timing = []; button_presses = []; resp = []; randmat = [];
+% timing = []; button_presses = []; resp = []; randmat = [];
+timing = []; button_presses = []; randmat = [];
+
 
 %% initial training
 if p.flag_training

@@ -6,8 +6,9 @@ WaitSecs(0.5);
 %% calculate feedback [for the all blocks]
 summcon = [];
 % loop across blocks
-for i_block = 1:numel(responses_in)
-    responses = responses_in{i_block};
+t.idx = find(~cellfun(@(x) isempty(x),responses_in));
+for i_block = 1:numel(responses_in(t.idx))
+    responses = responses_in{t.idx(i_block)};
     % get number of all events
     t.num_presses=sum(cellfun(@(x) sum(sum(~isnan(x))),{responses.button_presses_t}));    % number of total button presse
 
