@@ -315,7 +315,7 @@ end
 conmat.mats.block = repmat(1:conmat.totalblocks,conmat.trialsperblock,1);
 conmat.mats.block = conmat.mats.block(:)';
 
-t.resp_hand =  {'linke','rechte'};
+t.resp_hand =  {'LINKE','RECHTE'};
 if flag_training == 1
     t.idx = randsample([1 2],1);
 else
